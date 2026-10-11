@@ -1,0 +1,2002 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Downlink · Nordlys Polar Ground Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --accent:#FF5A1F; --accent-soft:rgba(255,90,31,.14);
+  --up:#1FB2EC; --ok:#17A06B; --warn:#DC8F05; --bad:#E5484D;
+  --ink:#17202B; --ink-2:#4B5665; --ink-3:#8792A2;
+  --glass:rgba(250,249,246,.70); --glass-strong:rgba(253,252,250,.94);
+  --stroke:rgba(255,255,255,.78); --hair:rgba(23,32,43,.075); --hair-2:rgba(23,32,43,.15);
+  --shadow:0 18px 40px -18px rgba(24,36,52,.45),0 2px 8px -2px rgba(24,36,52,.10);
+  --r:16px;
+  --font:'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --mono:'Martian Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+body[data-theme=night]{
+  --ink:#EBF0F6; --ink-2:#B6C1CF; --ink-3:#8896A8;
+  --glass:rgba(11,17,27,.62); --glass-strong:rgba(15,22,33,.95);
+  --stroke:rgba(255,255,255,.085); --hair:rgba(255,255,255,.07); --hair-2:rgba(255,255,255,.14);
+  --shadow:0 18px 44px -16px rgba(0,0,0,.7),0 2px 8px -2px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#0b121b;color:var(--ink);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.ui{position:fixed;z-index:5}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.5);-webkit-backdrop-filter:blur(18px) saturate(1.5);border:1px solid var(--stroke);border-radius:var(--r);box-shadow:var(--shadow);transition:background-color .8s ease,border-color .8s ease}
+.ic{width:16px;height:16px;flex:none}
+.mono{font-family:var(--mono);font-size:10.5px;letter-spacing:-.01em}
+.eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.reveal{opacity:0}
+body.ready .reveal{animation:rise .9s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--d,0)*90ms + 200ms)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* loader */
+#loader{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:radial-gradient(120% 90% at 50% 100%,#1b2a3d 0%,#0b121b 60%);transition:opacity .9s ease .2s,visibility 0s 1.2s}
+body.ready #loader{opacity:0;visibility:hidden}
+.ld-in{display:flex;flex-direction:column;align-items:center;gap:10px;color:#eaf0f6}
+.ld-mark{width:56px;height:56px;border-radius:16px;background:#17202b;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 40px -10px rgba(255,90,31,.35)}
+.ld-mark svg{width:34px;height:34px}
+.ld-t{font-weight:800;font-size:22px;letter-spacing:-.02em}
+.ld-s{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8f9db0}
+.ld-bar{width:160px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.ld-bar i{display:block;height:100%;width:40%;background:var(--accent);animation:ld 1.1s ease-in-out infinite}
+@keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+
+/* top bar */
+.topbar{top:12px;left:12px;right:12px;height:58px;display:flex;align-items:center;gap:12px;padding:0 10px 0 12px}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.logo{width:36px;height:36px;border-radius:11px;background:#17202b;display:grid;place-items:center;flex:none}
+.logo svg{width:22px;height:22px}
+.brand-name{font-weight:800;font-size:17px;letter-spacing:-.025em;line-height:1}
+.brand-sub{font-family:var(--mono);font-size:8.5px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;margin-top:4px}
+.search{position:relative;flex:0 1 270px;min-width:150px}
+.search .ic{position:absolute;left:11px;top:10px;color:var(--ink-3)}
+.search input{width:100%;height:36px;border-radius:11px;border:1px solid var(--hair);background:var(--glass-strong);padding:0 34px 0 34px;font:500 12.5px var(--font);color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s}
+.search input::placeholder{color:var(--ink-3)}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.search kbd{position:absolute;right:9px;top:9px;font-family:var(--mono);font-size:9px;color:var(--ink-3);border:1px solid var(--hair-2);border-radius:5px;padding:2px 5px}
+.search-res{position:absolute;top:42px;left:0;right:0;display:none;padding:6px;border-radius:12px;background:var(--glass-strong);border:1px solid var(--stroke);box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+.search-res.open{display:block}
+.sr-item{display:flex;align-items:center;gap:9px;width:100%;padding:7px 8px;border-radius:8px;text-align:left}
+.sr-item:hover,.sr-item.hi{background:var(--hair)}
+.sr-item .ic{color:var(--ink-3)}
+.sr-item b{font-weight:600;font-size:12.5px}
+.sr-item small{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.sr-empty{padding:8px;color:var(--ink-3);font-size:12px}
+.areas{display:flex;gap:2px;padding:3px;border-radius:12px;background:var(--hair);flex:none}
+.areas button{height:30px;padding:0 11px;border-radius:9px;font-weight:600;font-size:12px;color:var(--ink-2);white-space:nowrap;transition:background .25s,color .25s}
+.areas button:hover{color:var(--ink)}
+.areas button.on{background:var(--accent);color:#fff;box-shadow:0 6px 14px -6px var(--accent)}
+.tb-spacer{flex:1}
+.dd{position:relative}
+.weather-btn{display:flex;align-items:center;gap:8px;height:38px;padding:0 10px;border-radius:11px;border:1px solid var(--hair)}
+.weather-btn:hover{background:var(--hair)}
+.weather-btn .ic{width:20px;height:20px;color:var(--accent)}
+.wx-tx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}
+.wx-tx b{font-size:13px}
+.wx-tx small{font-size:10.5px;color:var(--ink-3)}
+.car{color:var(--ink-3);font-size:10px}
+.menu{position:absolute;top:46px;right:0;min-width:270px;display:none;padding:6px;border-radius:14px;background:var(--glass-strong);border:1px solid var(--stroke);box-shadow:var(--shadow);backdrop-filter:blur(18px);z-index:20}
+.menu.open{display:block;animation:rise .25s ease both}
+.wx-opt{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:10px;text-align:left}
+.wx-opt:hover{background:var(--hair)}
+.wx-opt.on{background:var(--accent-soft)}
+.wx-opt .ic{width:20px;height:20px;color:var(--ink-2)}
+.wx-opt.on .ic{color:var(--accent)}
+.wx-opt b{display:block;font-size:12.5px}
+.wx-opt small{font-size:11px;color:var(--ink-3)}
+.clock{display:flex;flex-direction:column;align-items:flex-end;padding:0 4px;line-height:1.15}
+.clock-t{font-family:var(--mono);font-weight:500;font-size:15px;letter-spacing:-.02em}
+.clock-s{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8.5px;color:var(--ink-3);letter-spacing:.08em}
+.live{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(23,160,107,.6);animation:livep 1.8s infinite;display:inline-block}
+@keyframes livep{0%{box-shadow:0 0 0 0 rgba(23,160,107,.55)}70%{box-shadow:0 0 0 6px rgba(23,160,107,0)}100%{box-shadow:0 0 0 0 rgba(23,160,107,0)}}
+.icon-btn{position:relative;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;border:1px solid var(--hair)}
+.icon-btn:hover{background:var(--hair)}
+.icon-btn .ic{width:18px;height:18px}
+.badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;border:2px solid var(--glass-strong)}
+.badge.zero{display:none}
+.alerts-menu{width:330px;max-height:380px;overflow:auto}
+.al-head{display:flex;justify-content:space-between;align-items:center;padding:6px 8px 8px}
+.al-head b{font-size:13px}
+.al-item{display:flex;gap:10px;padding:9px 8px;border-radius:10px}
+.al-item:hover{background:var(--hair)}
+.al-item i{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+.al-item b{display:block;font-size:12px;font-weight:600}
+.al-item span{font-size:11px;color:var(--ink-3)}
+.al-item time{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--ink-3);white-space:nowrap}
+.lv-info{background:var(--up)}.lv-warn{background:var(--warn)}.lv-crit{background:var(--bad)}.lv-ok{background:var(--ok)}
+.daynight{display:flex;padding:3px;border-radius:12px;background:var(--hair)}
+.daynight button{width:34px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3);transition:background .25s,color .25s}
+.daynight button.on{background:var(--glass-strong);color:var(--ink);box-shadow:0 2px 8px -2px rgba(0,0,0,.2)}
+.daynight .ic{width:16px;height:16px}
+.user{display:flex;align-items:center;gap:9px;padding-left:4px}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2b3a4c,#17202b);color:#fff;font-weight:700;font-size:12px;display:grid;place-items:center;box-shadow:0 0 0 2px var(--glass-strong),0 0 0 3.5px var(--accent)}
+.u-tx{line-height:1.2}
+.u-tx b{display:block;font-size:12.5px}
+.u-tx small{font-size:10.5px;color:var(--ink-3)}
+
+/* KPIs */
+.kpis{top:82px;left:12px;display:flex;gap:10px}
+.kpi{width:218px;padding:12px 12px 12px 13px;display:flex;flex-direction:column;gap:3px;position:relative;overflow:hidden}
+.kpi-top{display:flex;align-items:center;gap:8px}
+.kpi-ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.kpi-ic .ic{width:15px;height:15px}
+.kpi-l{font-size:11.5px;color:var(--ink-2);font-weight:500}
+.kpi-v{display:flex;align-items:baseline;gap:5px;margin-top:4px}
+.kpi-v b{font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.kpi-v small{font-size:12px;color:var(--ink-3);font-weight:600}
+.kpi-d{font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.kpi-d .pos{color:var(--ok);font-weight:600}
+.kpi canvas{position:absolute;right:10px;bottom:30px;width:74px;height:28px}
+.kpi .mbar{margin-top:6px}
+
+/* bars / pills / chips */
+.mbar{height:5px;border-radius:5px;background:var(--hair-2);overflow:hidden;min-width:44px}
+.mbar i{display:block;height:100%;border-radius:5px;background:var(--accent);transition:width .5s}
+.mbar.ok i{background:var(--ok)}.mbar.up i{background:var(--up)}.mbar.warn i{background:var(--warn)}
+.pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.pill.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.pill.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.pill.acc{color:var(--accent);background:var(--accent-soft)}
+.pill.up{color:var(--up);background:color-mix(in srgb,var(--up) 14%,transparent)}
+.pill.mute{color:var(--ink-3);background:var(--hair)}
+.pill.bad::before{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.bd{display:inline-grid;place-items:center;min-width:24px;height:18px;padding:0 5px;border-radius:5px;font-family:var(--mono);font-size:9px;font-weight:600}
+.bd-X{background:var(--accent-soft);color:var(--accent)}
+.bd-Ka{background:color-mix(in srgb,var(--up) 15%,transparent);color:var(--up)}
+.bd-S{background:var(--hair);color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:9.5px;font-weight:600}
+
+/* detail panel */
+.detail{top:82px;right:12px;width:340px;max-height:calc(100vh - 82px - 268px);overflow:auto;padding:14px;scrollbar-width:none}
+.detail::-webkit-scrollbar{display:none}
+.pd-head{display:flex;gap:11px;align-items:flex-start}
+.pd-ico{width:38px;height:38px;border-radius:11px;background:#17202b;color:#fff;display:grid;place-items:center;flex:none}
+.pd-ico .ic{width:19px;height:19px}
+.pd-tt{flex:1;min-width:0}
+.pd-title{font-size:19px;font-weight:800;letter-spacing:-.025em;line-height:1.15;margin-top:2px}
+.pd-sub{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.x{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:var(--ink-3)}
+.x:hover{background:var(--hair);color:var(--ink)}
+.pd-status{display:flex;align-items:center;gap:8px;margin:12px 0 10px;font-size:11.5px;color:var(--ink-2)}
+.pd-plot{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;background:var(--hair);margin-bottom:10px}
+.pd-plot canvas{width:126px;height:126px;flex:none}
+.pd-plot-cap{font-size:11px;color:var(--ink-2);line-height:1.5}
+.pd-plot-cap b{display:block;font-size:22px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1.05}
+.pd-plot-cap .eyebrow{margin-top:8px}
+.pd-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border-radius:12px;overflow:hidden;border:1px solid var(--hair)}
+.st{padding:8px 10px;background:var(--glass-strong)}
+.st .k{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.st .v{font-size:13.5px;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-bars{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.pb .row{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-2);margin-bottom:5px}
+.pb .row b{color:var(--ink);font-weight:600}
+.pd-foot{margin-top:12px;font-size:11px;color:var(--ink-3);line-height:1.5}
+
+/* tracker */
+.tracker{left:12px;bottom:12px;width:572px;height:244px;display:flex;gap:4px;padding:12px}
+.globe-wrap{width:150px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:12px;background:radial-gradient(90% 70% at 50% 40%,rgba(31,178,236,.10),transparent 70%)}
+.globe-wrap canvas{width:144px;height:144px}
+.globe-cap{font-family:var(--mono);font-size:8.5px;text-align:center;color:var(--ink-3);letter-spacing:.06em;line-height:1.6;text-transform:uppercase}
+.globe-cap b{color:var(--ink)}
+.trk{flex:1;min-width:0;padding:2px 4px 0 10px;display:flex;flex-direction:column}
+.trk-head{display:flex;justify-content:space-between;gap:8px}
+.trk-title{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:13px;white-space:nowrap}
+.trk-title b{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.trk-title .arrow{color:var(--ink-3)}
+.trk-t{text-align:right}
+.trk-t .tt{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--accent);letter-spacing:-.03em}
+.trk-t .ts{font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.steps{position:relative;display:grid;grid-template-columns:repeat(6,1fr);margin:18px 0 12px}
+.rail{position:absolute;left:8.33%;right:8.33%;top:11px;height:2px;background:var(--hair-2);border-radius:2px}
+.rail i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent);border-radius:2px;transition:width .5s ease}
+.step{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.step .dot{position:relative;width:24px;height:24px;border-radius:50%;background:var(--glass-strong);border:2px solid var(--hair-2);display:grid;place-items:center;transition:all .3s}
+.step .dot .ic{width:12px;height:12px;color:#fff;opacity:0;stroke-width:3}
+.step.done .dot{background:var(--accent);border-color:var(--accent)}
+.step.done .dot .ic{opacity:1}
+.step.active .dot{border-color:var(--accent);box-shadow:0 0 0 5px var(--accent-soft)}
+.step.active .dot::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent);position:absolute;animation:blink 1.1s infinite}
+.step.lost .dot{border-color:var(--bad);box-shadow:0 0 0 5px color-mix(in srgb,var(--bad) 18%,transparent)}
+.step.lost .dot::after{background:var(--bad)}
+.step .nm{font-size:11.5px;font-weight:600;white-space:nowrap}
+.step .tm{font-family:var(--mono);font-size:9px;color:var(--ink-3)}
+.step.future .nm{color:var(--ink-3);font-weight:500}
+.trk-foot{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hair);border-radius:11px;overflow:hidden;border:1px solid var(--hair);margin-top:auto}
+.trk-foot>div{padding:7px 10px;background:var(--glass-strong)}
+.trk-foot small{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.trk-foot b{font-size:13px;font-weight:600}
+
+/* table */
+.tablep{left:596px;right:12px;bottom:12px;height:244px;display:flex;flex-direction:column;padding:10px 6px 4px 10px}
+.tabs{display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px 0}
+.tab-group{display:flex;gap:4px}
+.tab-group button{height:30px;padding:0 12px;border-radius:9px;font-weight:600;font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:7px}
+.tab-group button span{font-family:var(--mono);font-size:9.5px;color:var(--ink-3);background:var(--hair);padding:2px 6px;border-radius:5px}
+.tab-group button.on{background:var(--accent);color:#fff;box-shadow:0 6px 14px -6px var(--accent)}
+.tab-group button.on span{background:rgba(255,255,255,.22);color:#fff}
+.live-ind{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);font-weight:500}
+.tbl-wrap{flex:1;overflow:auto;padding-right:4px;scrollbar-width:thin}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--glass-strong);text-align:left;font-family:var(--mono);font-weight:400;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:6px 8px;z-index:1;white-space:nowrap}
+td{padding:6px 8px;border-top:1px solid var(--hair);white-space:nowrap;font-size:12px}
+td.mono{font-size:10px}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:var(--hair)}
+tbody tr.sel{background:var(--accent-soft)}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+td .mbar{width:70px;display:inline-block;vertical-align:middle;margin-right:6px}
+.muted{color:var(--ink-3)}
+
+/* labels */
+.tag{position:absolute;left:0;top:0;pointer-events:auto;cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 8px 4px 7px;border-radius:9px;background:var(--glass-strong);border:1px solid var(--stroke);box-shadow:0 8px 18px -10px rgba(0,0,0,.55);font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;will-change:transform;transition:background-color .25s,color .25s}
+.tag::after{content:'';position:absolute;left:50%;bottom:-4px;width:7px;height:7px;background:inherit;border-right:1px solid var(--stroke);border-bottom:1px solid var(--stroke);transform:translateX(-50%) rotate(45deg)}
+.tag .sub{font-family:var(--mono);font-size:9px;color:var(--ink-3);font-weight:400}
+.tag .d{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.tag .d.ok{background:var(--ok)}.tag .d.warn{background:var(--warn)}.tag .d.bad{background:var(--bad);animation:blink 1s steps(2) infinite}.tag .d.acc{background:var(--accent)}.tag .d.up{background:var(--up)}
+.tag .ic{width:12px;height:12px;color:var(--ink-3)}
+.tag.sat{border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+.tag.sat .ic{color:var(--accent)}
+.tag.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tag.sel .sub,.tag.sel .ic{color:rgba(255,255,255,.85)}
+.tag.sel .d{background:#fff}
+.tag.small{padding:3px 7px;font-size:10.5px}
+
+/* toasts */
+.toasts{top:82px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;z-index:8}
+.toast{display:flex;gap:10px;align-items:flex-start;padding:10px 14px 10px 12px;min-width:280px;max-width:380px;border-radius:13px;animation:rise .35s ease both;background:var(--glass-strong)}
+.toast.out{opacity:0;transform:translateY(-6px);transition:all .35s}
+.toast .tl{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+.toast b{display:block;font-size:12.5px}
+.toast span{font-size:11.5px;color:var(--ink-3)}
+
+/* mobile sheet */
+.sheet{display:none}
+@media (max-width:1240px){
+  .user .u-tx,.brand-sub,.wx-tx small{display:none}
+  .search{flex-basis:170px;min-width:120px}
+  .kpi{width:196px}
+  .tracker{width:500px}.globe-wrap{width:120px}.globe-wrap canvas{width:116px;height:116px}
+  .tablep{left:524px}
+}
+@media (max-width:1180px){
+  .search{display:none}
+}
+@media (max-width:1060px){
+  .areas button{padding:0 7px;font-size:11.5px}
+}
+@media (max-width:960px) and (min-width:861px){
+  .clock{display:none}
+}
+@media (max-width:860px){
+  .topbar{top:8px;left:8px;right:8px;height:52px;gap:8px;padding:0 8px}
+  .brand-name{font-size:15px}
+  .logo{width:32px;height:32px}
+  .user,.clock-s,.wx-tx small,.car{display:none}
+  .clock-t{font-size:13px}
+  .areas{position:fixed;top:66px;left:8px;right:8px;overflow-x:auto;background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--stroke);scrollbar-width:none}
+  .areas::-webkit-scrollbar{display:none}
+  .kpis{top:110px;left:8px;right:8px;overflow-x:auto;scrollbar-width:none;gap:8px}
+  .kpis::-webkit-scrollbar{display:none}
+  .kpi{min-width:170px;width:170px;padding:9px 10px}
+  .kpi-v b{font-size:21px}
+  .kpi canvas{display:none}
+  .toasts{top:200px}
+  .sheet{display:flex;flex-direction:column;left:0;right:0;bottom:0;height:46vh;border-radius:20px 20px 0 0;padding:0 10px calc(10px + env(safe-area-inset-bottom));transition:height .35s cubic-bezier(.2,.7,.2,1)}
+  .sheet.min{height:148px}
+  .sheet-grab{height:22px;display:grid;place-items:center;flex:none}
+  .sheet-grab i{width:38px;height:4px;border-radius:4px;background:var(--hair-2)}
+  .sheet-tabs{display:flex;gap:4px;padding-bottom:8px;flex:none}
+  .sheet-tabs button{flex:1;height:32px;border-radius:9px;font-weight:600;font-size:12.5px;color:var(--ink-2);background:var(--hair)}
+  .sheet-tabs button.on{background:var(--accent);color:#fff}
+  .sheet-body{flex:1;overflow:auto;min-height:0}
+  .sheet-body>.ui{position:static;width:auto;height:auto;max-height:none;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:4px 2px;display:none}
+  .sheet-body>.ui.show{display:flex}
+  .sheet-body>#detail.show{display:block}
+  .sheet-body>#tracker{flex-direction:column}
+  .sheet-body>#tracker .globe-wrap{display:none}
+  .sheet-body>#tablePanel{flex-direction:column}
+  .sheet-body>#tablePanel .tbl-wrap{max-height:none}
+  .detail{max-height:none}
+}
+@media (max-width:430px){
+  .clock{display:none}
+  .weather-btn{padding:0 7px}
+  .daynight button{width:30px}
+}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body data-theme="day">
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+
+<div id="loader"><div class="ld-in">
+  <div class="ld-mark"><svg viewBox="0 0 32 32" fill="none"><path d="M5 12.5a12.5 12.5 0 0 0 14.5 14.5z" fill="#fff"/><path d="M12 20l7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.8" cy="12.2" r="1.9" fill="#FF5A1F"/><path d="M22.5 5.8a7 7 0 0 1 3.7 3.7M22 1.8a11 11 0 0 1 8.2 8.2" stroke="#FF5A1F" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+  <div class="ld-t">Downlink</div>
+  <div class="ld-s">Acquiring signal</div>
+  <div class="ld-bar"><i></i></div>
+</div></div>
+
+<header class="ui glass topbar reveal" style="--d:0">
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 32 32" fill="none"><path d="M5 12.5a12.5 12.5 0 0 0 14.5 14.5z" fill="#fff"/><path d="M12 20l7-7" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="19.8" cy="12.2" r="1.9" fill="#FF5A1F"/><path d="M22.5 5.8a7 7 0 0 1 3.7 3.7M22 1.8a11 11 0 0 1 8.2 8.2" stroke="#FF5A1F" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    <div class="brand-tx"><div class="brand-name">Downlink</div><div class="brand-sub">Nordlys Polar Ground Station</div></div>
+  </div>
+  <div class="search">
+    <span id="searchIco"></span>
+    <input id="search" type="text" placeholder="Search satellites, antennas, sites…" autocomplete="off" spellcheck="false" />
+    <kbd>/</kbd>
+    <div class="search-res" id="searchRes"></div>
+  </div>
+  <nav class="areas" id="areas"></nav>
+  <div class="tb-spacer"></div>
+  <div class="dd" id="weatherDD">
+    <button class="weather-btn" id="weatherBtn"><span id="wxIco"></span><span class="wx-tx"><b id="wxTemp">−12°C</b><small id="wxLabel">Clear</small></span><span class="car">▾</span></button>
+    <div class="menu" id="weatherMenu"></div>
+  </div>
+  <div class="clock"><div class="clock-t" id="clockT">00:00:00</div><div class="clock-s"><i class="live"></i>UTC · SIM ×20</div></div>
+  <div class="dd" id="alertsDD">
+    <button class="icon-btn" id="alertsBtn" aria-label="Alerts"><span id="bellIco"></span><span class="badge" id="alertsBadge">0</span></button>
+    <div class="menu alerts-menu" id="alertsMenu"></div>
+  </div>
+  <div class="daynight" id="dayNight"><button data-v="day" class="on" aria-label="Day"></button><button data-v="night" aria-label="Night"></button></div>
+  <div class="user"><div class="avatar">IH</div><div class="u-tx"><b>Ingrid Holm</b><small>Shift lead · Ops</small></div></div>
+</header>
+
+<section class="ui kpis" id="kpis">
+  <div class="kpi glass reveal" style="--d:1">
+    <div class="kpi-top"><div class="kpi-ic" id="kIc1"></div><div class="kpi-l">Data downlinked today</div></div>
+    <div class="kpi-v"><b id="kData">0</b><small>TB</small></div>
+    <div class="kpi-d"><span class="pos">▲ 8.4%</span> vs yesterday</div>
+    <canvas id="sparkData"></canvas>
+  </div>
+  <div class="kpi glass reveal" style="--d:2">
+    <div class="kpi-top"><div class="kpi-ic" id="kIc2"></div><div class="kpi-l">Passes today</div></div>
+    <div class="kpi-v"><b id="kPass">0</b><small id="kPassOf">/ 342</small></div>
+    <div class="kpi-d" id="kPassSub">Next AOS —</div>
+  </div>
+  <div class="kpi glass reveal" style="--d:3">
+    <div class="kpi-top"><div class="kpi-ic" id="kIc3"></div><div class="kpi-l">Link success</div></div>
+    <div class="kpi-v"><b id="kLink">0</b><small>%</small></div>
+    <div class="mbar ok"><i id="kLinkBar" style="width:99%"></i></div>
+    <div class="kpi-d" id="kLinkSub">2 degraded contacts</div>
+  </div>
+</section>
+
+<aside class="ui glass detail reveal" id="detail" style="--d:4"></aside>
+
+<section class="ui glass tracker reveal" id="tracker" style="--d:5">
+  <div class="globe-wrap"><canvas id="globe"></canvas><div class="globe-cap"><b>Kestrel</b> · 24 sats<br>SSO 97.6° · 4 planes</div></div>
+  <div class="trk">
+    <div class="trk-head">
+      <div><div class="eyebrow">Pass tracker</div><div class="trk-title"><span class="chip" id="trkPass">—</span><b id="trkSat">—</b><span class="arrow">→</span><span id="trkDish">—</span><span class="bd bd-X" id="trkBand">X</span></div></div>
+      <div class="trk-t"><div class="tt" id="trkT">T−00:00</div><div class="ts" id="trkTs">—</div></div>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="trk-foot">
+      <div><small>Data</small><b id="trkData">—</b></div>
+      <div><small>Rate</small><b id="trkRate">—</b></div>
+      <div><small>Max el</small><b id="trkEl">—</b></div>
+      <div><small>Doppler</small><b id="trkDop">—</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="ui glass tablep reveal" id="tablePanel" style="--d:6">
+  <div class="tabs">
+    <div class="tab-group" id="tabs">
+      <button data-tab="passes" class="on">Passes <span id="cntPasses">0</span></button>
+      <button data-tab="antennas">Antennas <span>6</span></button>
+      <button data-tab="sats">Satellites <span>24</span></button>
+    </div>
+    <div class="live-ind"><i class="live"></i>Live operations</div>
+  </div>
+  <div class="tbl-wrap"><table><thead id="tblHead"></thead><tbody id="tblBody"></tbody></table></div>
+</section>
+
+<div class="ui toasts" id="toasts"></div>
+<div class="ui sheet glass min" id="sheet">
+  <button class="sheet-grab" id="sheetGrab" aria-label="Expand"><i></i></button>
+  <div class="sheet-tabs" id="sheetTabs"><button data-s="detail" class="on">Details</button><button data-s="tracker">Pass</button><button data-s="tablePanel">Live</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/* =========================================================================
+   Helpers
+   ========================================================================= */
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const wrapPi = a => { while (a > Math.PI) a -= TAU; while (a < -Math.PI) a += TAU; return a; };
+const pad2 = n => String(n).padStart(2, '0');
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const srnd = mulberry32(20261011);
+const sr = (a, b) => a + srnd() * (b - a);
+function hash2(x, y) { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+function vnoise(x, y) { const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi; const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf); return lerp(lerp(hash2(xi, yi), hash2(xi + 1, yi), u), lerp(hash2(xi, yi + 1), hash2(xi + 1, yi + 1), u), v); }
+function fbm(x, y, o = 4) { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * vnoise(x * f, y * f); f *= 2.03; a *= .5; } return s; }
+function ridged(x, y, o = 4) { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { const n = 1 - Math.abs(vnoise(x * f, y * f) * 2 - 1); s += a * n * n; f *= 2.1; a *= .5; } return s; }
+const $ = s => document.querySelector(s);
+const fmtUTC = ms => new Date(ms).toISOString().slice(11, 19);
+const fmtHM = ms => new Date(ms).toISOString().slice(11, 16);
+const fmtMS = ms => { const s = Math.max(0, Math.round(Math.abs(ms) / 1000)); return pad2(Math.floor(s / 60)) + ':' + pad2(s % 60); };
+const fmtRate = m => m >= 1000 ? (m / 1000).toFixed(2) + ' Gbps' : Math.round(m) + ' Mbps';
+const nf = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+/* =========================================================================
+   Config
+   ========================================================================= */
+const ACCENT = '#FF5A1F', UPLINK = '#1FB2EC';
+const SIM = 20;                                  // simulation speed (×)
+const PREPOS = 100000, LOCK_AT = 22000, DL_AT = 38000; // sim ms
+const RE = 6371;
+const STATION = { lat: 78.2297 * DEG, lon: 15.3976 * DEG };
+const DOME = { cx: 0, cz: -45, rx: 172, ry: 92, y0: 26 };
+const STEPS = ['Scheduled', 'AOS', 'Lock', 'Downlink', 'LOS', 'Delivered'];
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const lowPower = isTouch || innerWidth < 860;
+
+const ICON = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  snow: '<path d="M20 17.6A5 5 0 0 0 18 8h-1.3A8 8 0 1 0 4 15.3"/><path d="M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"/>',
+  aurora: '<path d="M3 19c3-7 5-12 9-12s6 5 9 12"/><path d="M7 19c1.6-4 3-7 5-7s3.4 3 5 7"/><path d="M12 2v1.5M5 5l1 1M19 5l-1 1"/>',
+  storm: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  dish: '<path d="M4 9a9 9 0 0 0 11 11z"/><path d="M9.5 14.5 15 9"/><path d="M15 5a4 4 0 0 1 4 4M15 1.5A7.5 7.5 0 0 1 22.5 9"/>',
+  sat: '<path d="M13 7 9 3 5 7l4 4"/><path d="m17 11 4 4-4 4-4-4"/><path d="m8 12 4 4 6-6-4-4Z"/><path d="m16 8 3-3"/><path d="M9 21a6 6 0 0 0-6-6"/>',
+  building: '<path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/>',
+  server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  cable: '<path d="M4 20V10a4 4 0 0 1 8 0v4a4 4 0 0 0 8 0V4"/><path d="M2 20h4M18 4h4"/>',
+  truck: '<path d="M2 7h12v9H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/>',
+  ship: '<path d="M3 15h18l-2.5 5h-13z"/><path d="M6 15V9h12v6M12 4v5"/>',
+  house: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  close: '<path d="M18 6 6 18M6 6l12 12"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
+  data: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  orbit: '<circle cx="12" cy="12" r="2.5"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(-30 12 12)"/>',
+  signal: '<path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/>',
+  station: '<path d="M4 9a9 9 0 0 0 11 11z"/><path d="M9.5 14.5 15 9"/><path d="M3 22h10"/>',
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1600))]);
+
+/* =========================================================================
+   Renderer, scene, camera, post
+   ========================================================================= */
+const canvas = $('#scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+const DPR = Math.min(devicePixelRatio, lowPower ? 1.5 : 2);
+renderer.setPixelRatio(DPR);
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog('#EADFD6', 300, 1300);
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 1, 5000);
+
+const rt = new THREE.WebGLRenderTarget(innerWidth * DPR, innerHeight * DPR, { type: THREE.HalfFloatType, samples: lowPower ? 0 : 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.setSize(innerWidth, innerHeight);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.25, 0.4, 1.05);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+const hemi = new THREE.HemisphereLight('#DFE9F5', '#B9B1A7', 1.5);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight('#FFE7CF', 3.0);
+sun.castShadow = true;
+sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -200, right: 200, top: 200, bottom: -200, near: 10, far: 1100 });
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.35;
+sun.target.position.set(-10, 0, -20);
+scene.add(sun, sun.target);
+const SUN_DAY = new THREE.Vector3(-0.78, 0.58, 0.24).normalize();
+const SUN_NIGHT = new THREE.Vector3(0.45, 0.72, -0.52).normalize();
+
+const world = new THREE.Group();
+scene.add(world);
+
+/* =========================================================================
+   Materials
+   ========================================================================= */
+const matCache = new Map();
+function M(hex, o = {}) {
+  const k = hex + JSON.stringify(o);
+  if (!matCache.has(k)) matCache.set(k, new THREE.MeshStandardMaterial({ color: hex, roughness: o.r ?? .82, metalness: o.m ?? 0, flatShading: !!o.flat, side: o.side ?? THREE.FrontSide }));
+  return matCache.get(k);
+}
+const accentMat = new THREE.MeshStandardMaterial({ color: ACCENT, roughness: .6, emissive: ACCENT, emissiveIntensity: .08 });
+const steelMat = M('#8C949E', { m: .3, r: .5 });
+const dishMat = new THREE.MeshStandardMaterial({ color: '#F7F5F0', roughness: .5, side: THREE.DoubleSide });
+const windowMat = new THREE.MeshStandardMaterial({ color: '#2C3A48', emissive: '#FFC37A', emissiveIntensity: 0, roughness: .25, metalness: .2 });
+const ledMat = new THREE.MeshStandardMaterial({ color: '#1A2A35', emissive: UPLINK, emissiveIntensity: 1.2, roughness: .4 });
+const obstructMat = new THREE.MeshStandardMaterial({ color: '#661111', emissive: '#FF2222', emissiveIntensity: 1 });
+const lampMat = new THREE.MeshStandardMaterial({ color: '#555', emissive: '#FFD9A0', emissiveIntensity: 0, roughness: .4 });
+const headMat = new THREE.MeshStandardMaterial({ color: '#ddd', emissive: '#FFF1D6', emissiveIntensity: .3 });
+const beaconMat = new THREE.MeshStandardMaterial({ color: '#7a4a00', emissive: '#FFB020', emissiveIntensity: 1 });
+
+function mesh(geo, mat, { cast = true, recv = true } = {}) { const m = new THREE.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; }
+function rbox(w, h, d, mat, r = .35) { return mesh(new RoundedBoxGeometry(w, h, d, 2, Math.max(.01, Math.min(r, w / 2 - .01, h / 2 - .01, d / 2 - .01))), mat); }
+function box(w, h, d, mat) { return mesh(new THREE.BoxGeometry(w, h, d), mat); }
+function cyl(rt, rb, h, mat, seg = 12) { return mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat); }
+const YUP = new THREE.Vector3(0, 1, 0);
+function strut(a, b, r, mat) { const d = new THREE.Vector3().subVectors(b, a); const L = d.length(); const m = cyl(r, r, L, mat, 6); m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(YUP, d.normalize()); return m; }
+
+function makeTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+const glowTex = makeTex(128, 128, (g, w, h) => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+function signTex(text, { bg = '#17202B', fg = '#FFFFFF', w = 512, h = 112, size = 54 } = {}) {
+  return makeTex(w, h, (g) => {
+    g.fillStyle = bg; g.beginPath(); g.roundRect(0, 0, w, h, 18); g.fill();
+    g.fillStyle = ACCENT; g.fillRect(24, h / 2 - 16, 8, 32);
+    g.fillStyle = fg; g.font = `800 ${size}px 'Schibsted Grotesk', sans-serif`; g.textBaseline = 'middle'; g.fillText(text, 50, h / 2 + 3);
+  });
+}
+function sign(text, w, h, opts) { return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: signTex(text, opts), toneMapped: false })); }
+
+/* =========================================================================
+   Terrain, water, sky
+   ========================================================================= */
+const SHORE = x => 62 + 9 * Math.sin(x * .017 + .4) + 5 * Math.sin(x * .051 + 1.7);
+const FAR = x => 210 + 16 * Math.sin(x * .011 + 2.1);
+function terrainH(x, z) {
+  let h = 3.2 + (fbm(x * .018 + 10, z * .018 - 4, 2) - .5) * .5;
+  const dIn = Math.min(z - SHORE(x), FAR(x) - z);
+  if (dIn > -14) h = lerp(h, -9, smooth(-12, 16, dIn));
+  const land = 1 - smooth(-16, 4, dIn);
+  const mN = smooth(-100, -200, z);
+  const mS = smooth(FAR(x) + 6, FAR(x) + 80, z);
+  const mE = smooth(215, 330, x);
+  const mW = smooth(-230, -340, x) * land;
+  const m = Math.max(mN, mS, mE, mW);
+  if (m > 0) { const r = ridged(x * .0085 + 3, z * .0085 + 7, 3); h += m * (14 + 88 * r * r + 8 * fbm(x * .03, z * .03, 2)); }
+  return h;
+}
+
+(function buildTerrain() {
+  const S = 1400, N = lowPower ? 170 : 220;
+  const g0 = new THREE.PlaneGeometry(S, S, N, N); g0.rotateX(-Math.PI / 2); g0.translate(0, 0, 80);
+  const p0 = g0.attributes.position;
+  for (let i = 0; i < p0.count; i++) p0.setY(i, terrainH(p0.getX(i), p0.getZ(i)));
+  const g = g0.toNonIndexed(); g0.dispose(); g.computeVertexNormals();
+  const pos = g.attributes.position, nor = g.attributes.normal;
+  const col = new Float32Array(pos.count * 3); const c = new THREE.Color(); const snowA = new THREE.Color('#F4F2EE'), snowB = new THREE.Color('#ECEFF2');
+  for (let i = 0; i < pos.count; i += 3) {
+    const y = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3, ny = nor.getY(i);
+    const x = pos.getX(i), z = pos.getZ(i), n = vnoise(x * .03, z * .03);
+    if (y < -1.5) c.set('#3A5A63');
+    else if (y < 1.3) c.set(n > .5 ? '#7D746A' : '#8E8478');
+    else if (ny < .74 && y > 5) c.set(n > .55 ? '#6A645E' : '#7B736B');
+    else if (ny < .87 && y > 12) c.set('#B9B5AF');
+    else c.copy(n > .5 ? snowA : snowB);
+    for (let k = 0; k < 3; k++) { col[(i + k) * 3] = c.r; col[(i + k) * 3 + 1] = c.g; col[(i + k) * 3 + 2] = c.b; }
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, flatShading: true }));
+  m.receiveShadow = true;
+  world.add(m);
+})();
+
+const waterUniforms = { uTime: { value: 0 } };
+const waterMat = new THREE.MeshStandardMaterial({ color: '#2B6878', roughness: .16, metalness: .08, flatShading: true, transparent: true, opacity: .9 });
+waterMat.onBeforeCompile = sh => {
+  sh.uniforms.uTime = waterUniforms.uTime;
+  sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    transformed.y += sin(position.x*.08 + uTime*1.1)*.32 + sin(position.z*.11 + uTime*.8)*.28 + sin((position.x+position.z)*.05 + uTime*.6)*.38;`);
+};
+{
+  const wg = new THREE.PlaneGeometry(1200, 900, lowPower ? 100 : 150, lowPower ? 75 : 110); wg.rotateX(-Math.PI / 2);
+  const water = new THREE.Mesh(wg, waterMat); water.position.set(-60, 0, 170); water.receiveShadow = true; world.add(water);
+  const farW = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#2B6878', roughness: .3 }));
+  farW.position.y = -.6; world.add(farW);
+}
+
+// ice floes drifting down the fjord
+const floes = [];
+for (let i = 0; i < 18; i++) {
+  const r = sr(1.6, 5.5); const f = mesh(new THREE.CylinderGeometry(r, r * 1.1, .7, 5 + Math.floor(sr(0, 3))), M('#F2F5F7', { flat: true }), { cast: false });
+  const x = sr(-380, 160); const z = lerp(SHORE(x) + 16, FAR(x) - 16, srnd());
+  f.position.set(x, .15, z); f.rotation.y = sr(0, TAU); f.userData.v = sr(.6, 1.6); f.userData.ph = sr(0, TAU);
+  world.add(f); floes.push(f);
+}
+
+// sky dome
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: { top: { value: new THREE.Color('#8DB3D9') }, bot: { value: new THREE.Color('#EADFD6') } },
+  vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.); vW = w.xyz; gl_Position = projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `uniform vec3 top; uniform vec3 bot; varying vec3 vW; void main(){ float h = normalize(vW).y; vec3 c = mix(bot, top, smoothstep(-.02, .55, h)); gl_FragColor = vec4(c,1.); }`,
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(2200, 32, 16), skyMat); sky.renderOrder = -10; scene.add(sky);
+
+// stars
+const stars = (() => {
+  const g = new THREE.BufferGeometry(), p = [];
+  for (let i = 0; i < 1800; i++) { const th = Math.random() * TAU, ph = Math.acos(Math.random() * .95 + .05), r = 2000; p.push(r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  const s = new THREE.Points(g, new THREE.PointsMaterial({ size: 1.7, sizeAttenuation: false, color: '#fff', transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  scene.add(s); return s;
+})();
+
+// aurora curtains
+const auroraVS = `uniform float uTime; uniform float uZ; uniform float uPhase; uniform float uH; uniform float uY; varying vec2 vUv;
+void main(){ vUv = uv; float s = uv.x;
+  float x = mix(-780., 780., s) + sin(s*9.0 + uTime*.18)*30.;
+  float z = uZ + sin(s*5.0 + uTime*.12 + uPhase)*85. + sin(s*13.0 - uTime*.27 + uPhase*2.)*22. + uv.y*45.*sin(s*3.0 + uPhase);
+  float y = uY + uv.y*uH + sin(s*7.0 + uTime*.22 + uPhase)*18.;
+  gl_Position = projectionMatrix * viewMatrix * vec4(x, y, z, 1.); }`;
+const auroraFS = `uniform float uTime; uniform float uInt; uniform vec3 uC1; uniform vec3 uC2; uniform float uPhase; varying vec2 vUv;
+float h1(float n){ return fract(sin(n)*43758.5453); }
+float n1(float x){ float i = floor(x), f = fract(x); return mix(h1(i), h1(i+1.), f*f*(3.-2.*f)); }
+void main(){ float s = vUv.x, v = vUv.y;
+  float r1 = n1(s*150. + uTime*.7 + uPhase*10.); float rays = r1*r1*1.1 + n1(s*38. - uTime*.35)*.45;
+  float a = smoothstep(0., .07, v) * pow(1. - v, 1.5) * smoothstep(0., .14, s) * smoothstep(1., .86, s) * rays * (.75 + .25*sin(uTime*.8 + s*9. + uPhase)) * uInt;
+  vec3 col = mix(uC1, uC2, smoothstep(.3, .95, v));
+  gl_FragColor = vec4(col*1.1, a); }`;
+const auroraMats = [];
+for (const [z, ph, h, y] of [[-290, 0, 175, 52], [-380, 2.1, 215, 78], [-235, 4.2, 130, 46]]) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uZ: { value: z }, uPhase: { value: ph }, uH: { value: h }, uY: { value: y }, uInt: { value: 0 }, uC1: { value: new THREE.Color('#38FF9F') }, uC2: { value: new THREE.Color('#3BD3FF') } },
+    vertexShader: auroraVS, fragmentShader: auroraFS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
+  });
+  const a = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 240, 6), mat); a.frustumCulled = false; a.renderOrder = -5; scene.add(a); auroraMats.push(mat);
+}
+
+// falling snow
+const snowFx = (() => {
+  const N = lowPower ? 2400 : 4600, p = new Float32Array(N * 3), v = new Float32Array(N);
+  for (let i = 0; i < N; i++) { p[i * 3] = rand(-260, 260); p[i * 3 + 1] = rand(0, 190); p[i * 3 + 2] = rand(-260, 260); v[i] = rand(7, 14); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.6, map: glowTex, transparent: true, opacity: 0, depthWrite: false, color: '#ffffff' }));
+  pts.frustumCulled = false; pts.visible = false; scene.add(pts); return { pts, p, v, N };
+})();
+
+/* =========================================================================
+   Roads, fibre
+   ========================================================================= */
+function ribbon(pts, half, yOff, mat, yFn = (x, z) => terrainH(x, z)) {
+  const pos = [], idx = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    let tx = b.x - a.x, tz = b.z - a.z; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
+    for (const s of [-1, 1]) { const x = pts[i].x - tz * half * s, z = pts[i].z + tx * half * s; pos.push(x, yFn(x, z) + yOff, z); }
+    if (i > 0) { const k = (i - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat); m.receiveShadow = true; return m;
+}
+const LOOP = [[-40, 46], [-86, 30], [-112, -6], [-104, -46], [-82, -92], [-22, -100], [40, -99], [88, -84], [110, -42], [104, -2], [118, 30], [78, 42], [36, 26], [-6, 20]];
+const loopCurve = new THREE.CatmullRomCurve3(LOOP.map(([x, z]) => new THREE.Vector3(x, 0, z)), true, 'centripetal');
+loopCurve.arcLengthDivisions = 1200;
+const LOOP_LEN = loopCurve.getLength();
+const roadPts = loopCurve.getSpacedPoints(Math.round(LOOP_LEN / 2.5));
+world.add(ribbon(roadPts, 2.8, .36, new THREE.MeshStandardMaterial({ color: '#9C958B', roughness: 1, side: THREE.DoubleSide })));
+// harbour spur & pier approach
+world.add(ribbon([[-40, 46], [-40, 53]].map(([x, z]) => new THREE.Vector3(x, 0, z)), 2.8, .36, M('#9C958B', { side: THREE.DoubleSide })));
+
+// snow poles along the road
+{
+  const N = Math.floor(LOOP_LEN / 13); const geo = new THREE.CylinderGeometry(.12, .12, 2.6, 5);
+  const inst = new THREE.InstancedMesh(geo, M('#E04E2B'), N); const d = new THREE.Object3D();
+  for (let i = 0; i < N; i++) {
+    const u = i / N, p = loopCurve.getPointAt(u), t = loopCurve.getTangentAt(u), s = i % 2 ? 1 : -1;
+    const x = p.x - t.z * 4.1 * s, z = p.z + t.x * 4.1 * s;
+    d.position.set(x, terrainH(x, z) + 1.3, z); d.updateMatrix(); inst.setMatrixAt(i, d.matrix);
+  }
+  inst.castShadow = true; world.add(inst);
+}
+
+function makePath(pts2, yOff = .5, minY = -Infinity) {
+  const pts = [];
+  const yAt = (x, z) => Math.max(terrainH(x, z), minY) + yOff;
+  for (let i = 0; i < pts2.length - 1; i++) {
+    const [x0, z0] = pts2[i], [x1, z1] = pts2[i + 1]; const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 3));
+    for (let k = 0; k < n; k++) { const t = k / n, x = lerp(x0, x1, t), z = lerp(z0, z1, t); pts.push(new THREE.Vector3(x, yAt(x, z), z)); }
+  }
+  const [xl, zl] = pts2[pts2.length - 1]; pts.push(new THREE.Vector3(xl, yAt(xl, zl), zl));
+  const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  return { pts, cum, len: cum[cum.length - 1] };
+}
+function pathAt(P, s, out) {
+  s = clamp(s, 0, P.len); let lo = 1, hi = P.cum.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (P.cum[mid] < s) lo = mid + 1; else hi = mid; }
+  const t = (s - P.cum[lo - 1]) / ((P.cum[lo] - P.cum[lo - 1]) || 1); return out.lerpVectors(P.pts[lo - 1], P.pts[lo], t);
+}
+const fiberMat = new THREE.MeshStandardMaterial({ color: '#434A54', roughness: .9, side: THREE.DoubleSide });
+function fiberRibbon(pts2) { world.add(ribbon(makePath(pts2, 0).pts, .32, .3, fiberMat)); }
+const TRUNK_Z = -34;
+fiberRibbon([[-84, TRUNK_Z], [72, TRUNK_Z]]);
+fiberRibbon([[5, TRUNK_Z], [5, -12], [-48, -12], [-48, -4]]);
+fiberRibbon([[-62, 4], [-80, 20], [-100, 42]]);
+const SEA_PATH = makePath([[-62, 4], [-80, 20], [-100, 42], [-105, 56], [-113, 74], [-126, 112], [-140, 150]], .5, -2.2);
+
+/* =========================================================================
+   Placement bookkeeping
+   ========================================================================= */
+const blockers = [];
+const roadSamples = loopCurve.getSpacedPoints(260);
+function isFree(x, z, r) {
+  if (terrainH(x, z) < 1.6 || z > SHORE(x) - 4) return false;
+  for (const b of blockers) if (Math.hypot(b.x - x, b.z - z) < b.r + r) return false;
+  for (const p of roadSamples) if (Math.hypot(p.x - x, p.z - z) < r + 5) return false;
+  return true;
+}
+const ground = (x, z) => terrainH(x, z);
+
+/* =========================================================================
+   Entities & labels
+   ========================================================================= */
+const entities = [], byId = {}, pickables = [], labelList = [];
+const labelsEl = $('#labels');
+function addEnt(o) {
+  const e = Object.assign({ radius: 10, focusDist: 90, polar: 1.0, moving: false, sky: false, active: () => true, search: '' }, o);
+  entities.push(e); byId[e.id] = e;
+  if (e.root) e.root.traverse(m => { if (m.isMesh) { m.userData.ent = e; pickables.push(m); } });
+  return e;
+}
+function addLabel(e, html, cls, dy, opts = {}) {
+  const el = document.createElement('div'); el.className = 'tag ' + cls; el.innerHTML = html; labelsEl.appendChild(el);
+  el.addEventListener('click', ev => { ev.stopPropagation(); select(e); });
+  const L = { el, e, dy, maxD: opts.maxD ?? 900, show: opts.show ?? (() => true), vis: true, sub: el.querySelector('.sub'), dot: el.querySelector('.d') };
+  labelList.push(L); e.label = L; return L;
+}
+const V1 = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3();
+
+/* =========================================================================
+   Antennas
+   ========================================================================= */
+const DISH_DEFS = [
+  { id: 'DL-1', diam: 13, bands: ['X', 'Ka', 'S'], x: -50, z: -60, kind: '13 m Cassegrain', radome: false },
+  { id: 'DL-2', diam: 13, bands: ['X', 'Ka', 'S'], x: -15, z: -72, kind: '13 m Cassegrain', radome: false },
+  { id: 'DL-3', diam: 11, bands: ['X', 'S'], x: 20, z: -58, kind: '11 m prime focus', radome: false },
+  { id: 'DL-4', diam: 9, bands: ['X', 'S'], x: 52, z: -74, kind: '9 m prime focus', radome: false },
+  { id: 'DL-5', diam: 7.3, bands: ['S', 'X'], x: 70, z: -40, kind: '7.3 m radome', radome: true },
+  { id: 'DL-6', diam: 7.3, bands: ['S', 'X'], x: -82, z: -28, kind: '7.3 m radome', radome: true },
+];
+function makeDish(def) {
+  const s = def.diam / 10, R = def.diam / 2, f = R * .7;
+  const root = new THREE.Group();
+  const pedH = 5 * s, armH = 3.2 * s;
+  const ped = cyl(1.3 * s, 1.9 * s, pedH, M('#E7E4DE'), 14); ped.position.y = .6 + pedH / 2; root.add(ped);
+  const band = cyl(1.38 * s, 1.44 * s, .45 * s, accentMat, 14); band.position.y = .6 + pedH * .82; root.add(band);
+  const door = box(.9 * s, 1.7 * s, .25, M('#59616C')); door.position.set(0, .6 + .85 * s, 1.82 * s); root.add(door);
+  const azG = new THREE.Group(); azG.position.y = .6 + pedH; root.add(azG);
+  const head = rbox(3.6 * s, 1.4 * s, 2.8 * s, M('#DAD6CF'), .3 * s); head.position.y = .7 * s; azG.add(head);
+  for (const sd of [-1, 1]) { const arm = rbox(.65 * s, armH, 1.5 * s, M('#DAD6CF'), .2 * s); arm.position.set(sd * 1.75 * s, armH / 2 + .6 * s, 0); azG.add(arm); }
+  const elG = new THREE.Group(); elG.position.y = armH + .4 * s; azG.add(elG);
+  const pts = []; for (let i = 0; i <= 12; i++) { const r = R * i / 12; pts.push(new THREE.Vector2(r, r * r / (4 * f))); }
+  const dg = new THREE.LatheGeometry(pts, 36); dg.rotateX(Math.PI / 2);
+  const bowl = mesh(dg, dishMat); bowl.position.z = 1.4 * s; elG.add(bowl);
+  const rim = mesh(new THREE.TorusGeometry(R, .13 * s, 6, 44), M('#D3CFC8')); rim.position.z = 1.4 * s + R * R / (4 * f); elG.add(rim);
+  const hub = cyl(1.3 * s, 1.6 * s, 1.4 * s, M('#D2CEC7'), 14); hub.rotation.x = Math.PI / 2; hub.position.z = .6 * s; elG.add(hub);
+  const hubBand = cyl(1.34 * s, 1.34 * s, .35 * s, accentMat, 14); hubBand.rotation.x = Math.PI / 2; hubBand.position.z = .2 * s; elG.add(hubBand);
+  const focus = new THREE.Vector3(0, 0, 1.4 * s + f);
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, rr = R * .86; elG.add(strut(new THREE.Vector3(Math.cos(a) * rr, Math.sin(a) * rr, 1.4 * s + rr * rr / (4 * f)), focus, .07 * s + .03, steelMat)); }
+  const feedM = cyl(.32 * s, .55 * s, 1.2 * s, M('#E9E6E0'), 10); feedM.rotation.x = Math.PI / 2; feedM.position.copy(focus); elG.add(feedM);
+  const feed = new THREE.Object3D(); feed.position.copy(focus).add(new THREE.Vector3(0, 0, .7 * s)); elG.add(feed);
+  const ol = mesh(new THREE.SphereGeometry(.18 * s + .12, 8, 6), obstructMat, { cast: false }); ol.position.copy(focus).add(new THREE.Vector3(0, 0, .75 * s)); elG.add(ol);
+  return { root, azG, elG, feed, pivotH: .6 + pedH + armH + .4 * s };
+}
+const beamGeo = new THREE.CylinderGeometry(.2, .95, 1, 16, 1, true);
+const glowGeo = new THREE.CylinderGeometry(.5, 2.2, 1, 16, 1, true);
+const C_ACC = new THREE.Color(ACCENT), C_UP = new THREE.Color(UPLINK);
+const dishes = DISH_DEFS.map(def => {
+  const m = makeDish(def); const y = ground(def.x, def.z);
+  m.root.position.set(def.x, y, def.z); world.add(m.root);
+  const pad = rbox(def.radome ? 17 : 10 * def.diam / 10 + 2, 1.6, def.radome ? 17 : 10 * def.diam / 10 + 2, M('#CAC5BD'), .5); pad.position.set(def.x, y - .2, def.z); world.add(pad);
+  let radome = null;
+  if (def.radome) {
+    const rmat = new THREE.MeshStandardMaterial({ color: '#F6F5F1', roughness: .62, flatShading: true, transparent: true, opacity: 1 });
+    radome = mesh(new THREE.IcosahedronGeometry(7.4, 2), rmat); radome.position.y = 6.3; m.root.add(radome);
+    const ring = cyl(6.7, 7.0, 1.8, M('#D9D4CC'), 24); ring.position.y = .9; m.root.add(ring);
+    const ol = mesh(new THREE.SphereGeometry(.32, 8, 6), obstructMat, { cast: false }); ol.position.y = 13.8; m.root.add(ol);
+  }
+  // equipment shelter
+  const sh = rbox(3.4, 2.4, 2.4, M('#EDEAE4'), .3); sh.position.set(def.x + (def.radome ? 9.5 : 6.5 * def.diam / 10), y + 1.2, def.z + 2); world.add(sh);
+  const shd = rbox(3.5, .35, 2.5, accentMat, .1); shd.position.copy(sh.position).add(new THREE.Vector3(0, 1.1, 0)); world.add(shd);
+  m.root.updateMatrixWorld(true);
+  const d = {
+    id: def.id, def, diam: def.diam, bands: def.bands, kind: def.kind, radome, ...m,
+    az: rand(-Math.PI, Math.PI), el: Math.PI / 2, tAz: 0, tEl: Math.PI / 2,
+    pivotW: m.elG.getWorldPosition(new THREE.Vector3()), feedW: new THREE.Vector3(),
+    pass: null, lastPass: null, freeAt: -Infinity, passesToday: Math.round(sr(8, 15)), dataToday: sr(260, 980), lna: sr(28, 36),
+    beam: new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: C_ACC.clone().multiplyScalar(4), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })),
+    glow: new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({ color: C_ACC.clone().multiplyScalar(1.6), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })),
+    fiber: makePath([[def.x, def.z], [def.x, TRUNK_Z], [5, TRUNK_Z], [5, -12], [-48, -12], [-48, -4]], .55),
+    radomeOp: 1,
+  };
+  d.beam.visible = d.glow.visible = false; d.beam.frustumCulled = d.glow.frustumCulled = false;
+  scene.add(d.beam, d.glow);
+  fiberRibbon([[def.x, def.z], [def.x, TRUNK_Z]]);
+  blockers.push({ x: def.x, z: def.z, r: def.radome ? 11 : 9 });
+  return d;
+});
+
+/* =========================================================================
+   Buildings
+   ========================================================================= */
+function place(g, x, z, yOff = 0) { g.position.set(x, ground(x, z) + yOff, z); world.add(g); return g; }
+
+// Operations centre
+const ops = (() => {
+  const g = new THREE.Group();
+  const base = rbox(29, 1.4, 17, M('#C9C4BB'), .4); base.position.y = .1; g.add(base);
+  const body = rbox(26, 7, 14, M('#ECE8E1'), .6); body.position.y = 4.2; g.add(body);
+  const stripe = rbox(26.2, .7, 14.2, accentMat, .3); stripe.position.y = 6.7; g.add(stripe);
+  const w1 = box(22, 1.8, .3, windowMat); w1.position.set(0, 3.7, 7.05); g.add(w1);
+  const w2 = box(.3, 1.8, 10, windowMat); w2.position.set(13.05, 3.7, 0); g.add(w2);
+  const w3 = box(.3, 1.8, 10, windowMat); w3.position.set(-13.05, 3.7, 0); g.add(w3);
+  const cr = rbox(14, 4, 9, M('#DCD8D1'), .5); cr.position.set(-3, 9.6, -1); g.add(cr);
+  const crw = box(14.2, 1.9, 9.2, windowMat); crw.position.set(-3, 10, -1); g.add(crw);
+  const cap = rbox(15, .6, 10, M('#38414D'), .25); cap.position.set(-3, 11.9, -1); g.add(cap);
+  const mast = cyl(.25, .32, 9, steelMat, 6); mast.position.set(8, 12, -3); g.add(mast);
+  const radar = new THREE.Group(); radar.position.set(8, 16.6, -3); g.add(radar);
+  const bar = rbox(4.4, .45, .7, M('#F2F0EB'), .15); radar.add(bar);
+  const ol = mesh(new THREE.SphereGeometry(.3, 8, 6), obstructMat, { cast: false }); ol.position.set(8, 17.4, -3); g.add(ol);
+  const rd = mesh(new THREE.IcosahedronGeometry(1.9, 1), M('#F5F4F0', { flat: true })); rd.position.set(8, 9.1, 3); g.add(rd);
+  for (const [x, z] of [[-9, 3.5], [-6, 3.5]]) { const h = rbox(2.2, 1.2, 2, M('#A9AFB7'), .2); h.position.set(x, 8.3, z); g.add(h); }
+  const can = rbox(6, .4, 3, M('#38414D'), .15); can.position.set(-6, 3.3, 8.4); g.add(can);
+  const door = box(3, 2.6, .3, M('#2B3139')); door.position.set(-6, 2.1, 7.1); g.add(door);
+  const sg = sign('NORDLYS OPS', 8.4, 1.84); sg.position.set(5.2, 5.4, 7.13); g.add(sg);
+  place(g, 5, -2);
+  // parked cars
+  for (let i = 0; i < 4; i++) { const c = rbox(2, 1.4, 4, M(['#D94E3A', '#3E6E9E', '#E7E3DB', '#2E3540'][i]), .45); c.position.set(19 + i * 3, ground(19 + i * 3, 11) + 1, 11); world.add(c); }
+  blockers.push({ x: 5, z: -2, r: 18 }, { x: 24, z: 11, r: 8 });
+  return { g, radar };
+})();
+
+// Processing hall (data centre)
+const proc = (() => {
+  const g = new THREE.Group();
+  const body = rbox(30, 8, 17, M('#58616E'), .6); body.position.y = 4.4; g.add(body);
+  const roof = rbox(30.4, .6, 17.4, M('#3B424C'), .25); roof.position.y = 8.6; g.add(roof);
+  for (let i = 0; i < 10; i++) { const r = box(.35, 7, .3, M('#6B7481')); r.position.set(-13.5 + i * 3, 4.2, 8.6); g.add(r); }
+  const led = box(26, .35, .2, ledMat); led.position.set(0, 7.2, 8.72); g.add(led);
+  const led2 = box(.2, .35, 13, ledMat); led2.position.set(15.1, 7.2, 0); g.add(led2);
+  const door = box(5, 4.6, .3, M('#2B3139')); door.position.set(9, 2.6, 8.62); g.add(door);
+  const sg = sign('PROCESSING', 8.2, 1.8); sg.position.set(-4, 5.4, 8.78); g.add(sg);
+  const fans = [];
+  for (let i = 0; i < 4; i++) for (const z of [-4, 4]) {
+    const hz = cyl(1.7, 1.7, 1, M('#9AA3AE'), 16); hz.position.set(-10.5 + i * 7, 9.4, z); g.add(hz);
+    const bl = new THREE.Group(); bl.position.set(-10.5 + i * 7, 9.95, z); g.add(bl);
+    for (const r of [0, Math.PI / 2]) { const b = box(3, .1, .45, M('#2E3540')); b.rotation.y = r; bl.add(b); }
+    fans.push(bl);
+  }
+  place(g, -48, 4);
+  blockers.push({ x: -48, z: 4, r: 19 });
+  return { g, fans };
+})();
+
+// Power plant + fuel tanks
+const power = (() => {
+  const g = new THREE.Group();
+  const body = rbox(18, 9, 12, M('#A8473A'), .5); body.position.y = 4.6; g.add(body);
+  const roof = rbox(18.4, .6, 12.4, M('#555C66'), .25); roof.position.y = 9.2; g.add(roof);
+  const chimneys = [];
+  for (const x of [-4.5, .5]) {
+    const c = cyl(1.0, 1.3, 12, M('#DCD7CF'), 14); c.position.set(x, 10.5, -2); g.add(c);
+    const b = cyl(1.04, 1.06, 1.3, accentMat, 14); b.position.set(x, 14.6, -2); g.add(b);
+    chimneys.push(new THREE.Vector3(x, 16.8, -2));
+  }
+  const w = box(14, 1.4, .3, windowMat); w.position.set(0, 6.4, 6.05); g.add(w);
+  const door = box(4, 4, .3, M('#2B3139')); door.position.set(5, 2.2, 6.05); g.add(door);
+  const sg = sign('POWER', 5.6, 1.5); sg.position.set(-4, 3.2, 6.22); g.add(sg);
+  place(g, 74, -6);
+  const tanks = [];
+  for (const [x, z] of [[90, -22], [97.5, -22], [93.7, -30]]) {
+    const t = new THREE.Group();
+    const c = cyl(3, 3, 6, M('#EEECE7'), 18); c.position.y = 3; t.add(c);
+    const cap = mesh(new THREE.SphereGeometry(3, 18, 8, 0, TAU, 0, Math.PI / 2), M('#E2DFD9')); cap.scale.y = .35; cap.position.y = 6; t.add(cap);
+    const b = cyl(3.04, 3.04, .6, accentMat, 18); b.position.y = 4.6; t.add(b);
+    place(t, x, z); tanks.push(t);
+  }
+  blockers.push({ x: 74, z: -6, r: 14 }, { x: 94, z: -25, r: 10 });
+  return { g, chimneys, tanks };
+})();
+
+// Cable landing station
+const cls = (() => {
+  const g = new THREE.Group();
+  const body = rbox(9, 4.2, 7, M('#F0EEE9'), .4); body.position.y = 2.2; g.add(body);
+  const roof = rbox(9.4, .5, 7.4, M('#2F6F7A'), .2); roof.position.y = 4.5; g.add(roof);
+  const door = box(2, 3, .3, M('#2F6F7A')); door.position.set(2, 1.6, 3.55); g.add(door);
+  const sg = sign('CLS-1', 4, 1.1); sg.position.set(-1.8, 2.8, 3.62); g.add(sg);
+  const mh = cyl(1.1, 1.1, .3, M('#5A6069'), 16); mh.position.set(-1, .15, 6.5); g.add(mh);
+  place(g, -100, 42);
+  blockers.push({ x: -100, z: 42, r: 9 });
+  return { g };
+})();
+
+// Floodlight masts + light pools
+const lightPools = [];
+function lightPool(x, z, r, color = '#FFC98A') {
+  const m = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ map: glowTex, color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.scale.setScalar(r); m.position.set(x, ground(x, z) + .9, z); m.renderOrder = 2; world.add(m); lightPools.push(m); return m;
+}
+for (const [x, z] of [[-33, -44], [2, -50], [38, -78], [-70, -46], [44, -30]]) {
+  const g = new THREE.Group();
+  const p = cyl(.28, .45, 16, steelMat, 6); p.position.y = 8; g.add(p);
+  const head = rbox(2.8, .9, 1.3, lampMat, .2); head.position.y = 16.2; g.add(head);
+  const ol = mesh(new THREE.SphereGeometry(.25, 8, 6), obstructMat, { cast: false }); ol.position.y = 17; g.add(ol);
+  place(g, x, z); blockers.push({ x, z, r: 3 }); lightPool(x, z, 19);
+}
+lightPool(5, 8, 26); lightPool(-48, 16, 22); lightPool(74, 4, 18); lightPool(-40, 62, 18); lightPool(-100, 50, 12);
+
+// Village "Nordby" — colourful wooden houses with snowy roofs
+const houses = [];
+const HOUSE_COLS = ['#C8553D', '#E2A93B', '#3C8D93', '#E9DCC4', '#6C9A5B', '#4C78A8', '#B5485A', '#D98E3A', '#9E3F35'];
+function makeHouse(w, d, h, col) {
+  const g = new THREE.Group();
+  const body = rbox(w, h, d, M(col), .25); body.position.y = h / 2; g.add(body);
+  const r = w * .62; const rg = new THREE.CylinderGeometry(r, r, d * 1.1, 3, 1); rg.rotateX(-Math.PI / 2); rg.rotateZ(0); rg.scale(1, .55, 1);
+  const roof = mesh(rg, M(srnd() > .3 ? '#F7F6F3' : '#3A3F47', { flat: true })); roof.position.y = h + r * .5 * .55 - .05; g.add(roof);
+  const chim = box(.8, 2, .8, M('#6A5E55')); chim.position.set(w * .25, h + 1.2, -d * .2); g.add(chim);
+  const nW = Math.max(1, Math.floor(w / 2.4));
+  for (let i = 0; i < nW; i++) { const win = box(.9, 1, .2, windowMat); win.position.set(-w / 2 + (i + .5) * (w / nW), h * .55, d / 2 + .05); g.add(win); }
+  const door = box(1, 1.8, .2, M('#3B302A')); door.position.set(w * .3, .9, d / 2 + .06); g.add(door);
+  return g;
+}
+function scatterHouses(n, x0, x1, z0, z1) {
+  let tries = 0, made = 0;
+  while (made < n && tries++ < 400) {
+    const x = sr(x0, x1), z = sr(z0, z1), w = sr(5, 8), d = sr(5, 7.5), h = sr(3.2, 5);
+    if (!isFree(x, z, 5)) continue;
+    const g = makeHouse(w, d, h, HOUSE_COLS[Math.floor(srnd() * HOUSE_COLS.length)]);
+    const yaw = Math.atan2(-(x - 70), -(z - 40)) + sr(-.3, .3);
+    g.rotation.y = Math.round(yaw / (Math.PI / 2)) * Math.PI / 2 + sr(-.12, .12);
+    place(g, x, z); blockers.push({ x, z, r: 5.5 }); houses.push(g); made++;
+  }
+}
+scatterHouses(17, 40, 140, 28, 66);
+scatterHouses(5, -30, 22, 30, 54);
+
+// Harbour: pier, warehouse, small boats
+const harbour = (() => {
+  const g = new THREE.Group();
+  const deck = box(6, .6, 34, M('#7A6352')); deck.position.set(0, 1.7, 0); g.add(deck);
+  for (let i = 0; i < 9; i++) for (const sx of [-2.6, 2.6]) { const p = cyl(.3, .3, 6, M('#4E4038'), 6); p.position.set(sx, -1.2, -16 + i * 4); g.add(p); }
+  for (let i = 0; i < 4; i++) { const b = cyl(.3, .35, .8, M('#2E3540'), 8); b.position.set(2.7, 2.3, -10 + i * 8); g.add(b); }
+  g.position.set(-40, 0, 69); world.add(g);
+  const wh = rbox(12, 6, 8, M('#B5483A'), .4); wh.position.set(-56, ground(-56, 46) + 3, 46); world.add(wh);
+  const whr = rbox(12.4, .5, 8.4, M('#F4F2EE'), .2); whr.position.set(-56, ground(-56, 46) + 6.2, 46); world.add(whr);
+  blockers.push({ x: -56, z: 46, r: 8 }, { x: -40, z: 58, r: 5 });
+  const boats = [];
+  for (const [x, z, c] of [[-46, 74, '#E2A93B'], [-46.5, 82, '#3C8D93']]) {
+    const b = new THREE.Group();
+    const hull = rbox(2.4, 1.2, 6, M(c), .5); hull.position.y = .2; b.add(hull);
+    const cab = rbox(1.6, 1.2, 1.8, M('#F4F2EE'), .2); cab.position.set(0, 1.2, -.8); b.add(cab);
+    b.position.set(x, 0, z); world.add(b); boats.push(b);
+  }
+  return { g, boats };
+})();
+
+// Rocks
+{
+  const N = 90, inst = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), M('#7E776F', { flat: true }), N); const d = new THREE.Object3D(); let k = 0;
+  for (let t = 0; t < 900 && k < N; t++) {
+    const x = sr(-190, 190), z = sr(-150, 60); const s = sr(.5, 2.2);
+    if (!isFree(x, z, s + 1)) continue;
+    d.position.set(x, ground(x, z) + s * .2, z); d.rotation.set(sr(0, 3), sr(0, 3), sr(0, 3)); d.scale.set(s, s * sr(.5, .9), s * sr(.8, 1.2)); d.updateMatrix(); inst.setMatrixAt(k++, d.matrix);
+  }
+  inst.count = k; inst.castShadow = true; inst.receiveShadow = true; world.add(inst);
+}
+
+/* =========================================================================
+   Vehicles & ship
+   ========================================================================= */
+function wheels(g, xs, zs, r = .7) { for (const x of xs) for (const z of zs) { const w = cyl(r, r, .55, M('#22262B'), 10); w.rotation.z = Math.PI / 2; w.position.set(x, r, z); g.add(w); } }
+function lights(g, y, z, x = .8) { for (const sx of [-x, x]) { const l = box(.5, .3, .1, headMat); l.position.set(sx, y, z); g.add(l); } }
+function makePlough() {
+  const g = new THREE.Group();
+  const body = rbox(3.2, 1.6, 5.4, M('#F2B33D'), .3); body.position.y = 1.5; g.add(body);
+  const cab = rbox(2.8, 1.9, 2.2, M('#F2B33D'), .3); cab.position.set(0, 3.1, 1); g.add(cab);
+  const gl = box(2.9, .8, 2.3, windowMat); gl.position.set(0, 3.4, 1); g.add(gl);
+  const blade = box(4.8, 1.3, .35, M('#2D333B')); blade.position.set(0, .85, 3.5); blade.rotation.y = .32; g.add(blade);
+  const bea = cyl(.25, .25, .35, beaconMat, 8); bea.position.set(0, 4.25, 1); g.add(bea);
+  wheels(g, [-1.5, 1.5], [-1.6, 1.4], .75); lights(g, 1.6, 2.75);
+  return g;
+}
+function makeVan() {
+  const g = new THREE.Group();
+  const body = rbox(2.4, 2.2, 5, M('#F4F3EF'), .45); body.position.y = 1.7; g.add(body);
+  const st = box(2.46, .35, 4.2, accentMat); st.position.set(0, 1.4, -.2); g.add(st);
+  const gl = box(2.46, .7, 1, windowMat); gl.position.set(0, 2.25, 1.8); g.add(gl);
+  wheels(g, [-1.1, 1.1], [-1.6, 1.6], .55); lights(g, 1.4, 2.52, .75);
+  return g;
+}
+function makeFuel() {
+  const g = new THREE.Group();
+  const cab = rbox(2.5, 2.2, 2, M('#2F6F7A'), .35); cab.position.set(0, 1.7, 2.3); g.add(cab);
+  const gl = box(2.56, .7, .8, windowMat); gl.position.set(0, 2.2, 2.9); g.add(gl);
+  const tk = cyl(1.25, 1.25, 4.6, M('#E7E4DE'), 14); tk.rotation.x = Math.PI / 2; tk.position.set(0, 1.9, -1.1); g.add(tk);
+  const b = cyl(1.28, 1.28, .5, accentMat, 14); b.rotation.x = Math.PI / 2; b.position.set(0, 1.9, -1.1); g.add(b);
+  wheels(g, [-1.1, 1.1], [-2.4, -.6, 2.2], .55); lights(g, 1.3, 3.32, .8);
+  return g;
+}
+function uOf(x, z) { let best = 0, bd = 1e9; for (let i = 0; i < 800; i++) { const p = loopCurve.getPointAt(i / 800); const d = Math.hypot(p.x - x, p.z - z); if (d < bd) { bd = d; best = i / 800; } } return best; }
+const vehicles = [
+  { id: 'plough', name: 'Snowplough SP-2', model: makePlough(), u: .06, vmax: 6.5, stops: [], driver: 'A. Johansen', route: 'Perimeter loop', beacon: true },
+  { id: 'van', name: 'Crew van CV-1', model: makeVan(), u: .4, vmax: 11, stops: [{ u: uOf(-6, 20), dur: 6, at: 'Operations' }, { u: uOf(-40, 46), dur: 5, at: 'Harbour' }, { u: uOf(-104, -46), dur: 4, at: 'DL-6' }], driver: 'M. Berg', route: 'Ops ↔ field ↔ harbour' },
+  { id: 'fuel', name: 'Fuel truck FT-7', model: makeFuel(), u: .74, vmax: 8.5, stops: [{ u: uOf(-40, 46), dur: 9, at: 'Harbour' }, { u: uOf(104, -2), dur: 9, at: 'Power plant' }], driver: 'K. Nilsen', route: 'Harbour → power plant' },
+];
+for (const v of vehicles) { v.speed = 0; v.wait = 0; v.stopIdx = 0; v.status = 'Moving'; v.fuel = sr(55, 95); world.add(v.model); }
+
+function makeShip() {
+  const g = new THREE.Group();
+  const hull = rbox(7, 3.2, 30, M('#B33A2E'), 1.1); hull.position.y = .5; g.add(hull);
+  const deck = rbox(7.1, .5, 30.1, M('#F2F0EB'), .2); deck.position.y = 2.2; g.add(deck);
+  const sup = rbox(6, 5, 7, M('#F4F3EF'), .4); sup.position.set(0, 4.9, -9); g.add(sup);
+  const bw = box(6.1, .9, 7.1, windowMat); bw.position.set(0, 6.4, -9); g.add(bw);
+  const fun = cyl(.9, 1.1, 3, M('#22262B'), 12); fun.position.set(0, 8.6, -11); g.add(fun);
+  const fb = cyl(.95, .95, .6, accentMat, 12); fb.position.set(0, 9.4, -11); g.add(fb);
+  for (const [z, c] of [[1, '#3C8D93'], [7, '#E2A93B'], [13, '#4C78A8']]) { const k = rbox(5.4, 2.4, 5.6, M(c), .15); k.position.set(0, 3.6, z); g.add(k); }
+  const mast = cyl(.18, .2, 7, steelMat, 6); mast.position.set(0, 8, 4); g.add(mast);
+  const boom = strut(new THREE.Vector3(0, 10.5, 4), new THREE.Vector3(2, 4.6, 10), .14, steelMat); g.add(boom);
+  const nav = mesh(new THREE.SphereGeometry(.25, 8, 6), obstructMat, { cast: false }); nav.position.set(0, 11.6, 4); g.add(nav);
+  return g;
+}
+const SHIP_IN = new THREE.CatmullRomCurve3([[-520, 158], [-300, 136], [-160, 118], [-80, 104], [-36, 96], [-33, 76]].map(([x, z]) => new THREE.Vector3(x, 0, z)));
+const SHIP_OUT = new THREE.CatmullRomCurve3([[-33, 76], [-30, 100], [-70, 130], [-180, 150], [-320, 158], [-540, 160]].map(([x, z]) => new THREE.Vector3(x, 0, z)));
+const ship = { model: makeShip(), state: 'alongside', s: 0, timer: 16, yaw: Math.PI, speed: 0 };
+ship.model.position.set(-33, 0, 76); ship.model.rotation.y = Math.PI; world.add(ship.model);
+
+/* =========================================================================
+   Satellites
+   ========================================================================= */
+const sats = Array.from({ length: 24 }, (_, i) => ({
+  id: 'K' + pad2(i + 1), name: 'Kestrel-' + pad2(i + 1), norad: 91104 + i * 11 + (i % 3) * 2, alt: Math.round(sr(532, 561)),
+  plane: i % 4, phase: Math.floor(i / 4) / 6 * TAU + (i % 4) * .45, buffer: sr(40, 200), cap: 256, battery: sr(74, 98),
+  lastContact: null, pass: null, seed: sr(0, 100), vis: false,
+}));
+function makeSatModel() {
+  const g = new THREE.Group(); const s = 1.25;
+  const bus = rbox(2.4 * s, 2.4 * s, 3.2 * s, M('#ECE8DF'), .25); g.add(bus);
+  const foil = rbox(2.5 * s, 1.2 * s, 3.3 * s, M('#D4A548', { m: .55, r: .35 }), .2); foil.position.y = -.65 * s; g.add(foil);
+  const top = box(1 * s, .3 * s, 1.4 * s, accentMat); top.position.y = 1.3 * s; g.add(top);
+  for (const sd of [-1, 1]) {
+    g.add(strut(new THREE.Vector3(sd * 1.2 * s, 0, 0), new THREE.Vector3(sd * 2.6 * s, 0, 0), .08 * s, steelMat));
+    for (let i = 0; i < 3; i++) { const p = box(2.2 * s, .12, 2.6 * s, M('#22407A', { m: .45, r: .3 })); p.position.set(sd * (3.8 + i * 2.35) * s, 0, 0); g.add(p); }
+  }
+  const ant = cyl(.95 * s, .25 * s, .7 * s, M('#F4F3EF'), 14); ant.rotation.x = Math.PI / 2; ant.position.z = 1.9 * s; g.add(ant);
+  const nav = mesh(new THREE.SphereGeometry(.28, 8, 6), obstructMat, { cast: false }); nav.position.set(0, 1.6 * s, -1.4 * s); g.add(nav);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: C_ACC.clone().multiplyScalar(1.5), transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false }));
+  halo.scale.setScalar(16); g.add(halo);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(9, 8, 6), new THREE.MeshBasicMaterial()); hit.visible = false; g.add(hit);
+  g.visible = false; return { g, halo };
+}
+for (const s of sats) { const m = makeSatModel(); s.model = m.g; s.halo = m.halo; scene.add(s.model); }
+
+function domePoint(az, el, out) {
+  const ce = Math.cos(el);
+  return out.set(DOME.cx + Math.sin(az) * ce * DOME.rx, DOME.y0 + Math.sin(el) * DOME.ry, DOME.cz - Math.cos(az) * ce * DOME.rx);
+}
+function makeTrack(peakAz, maxEl) {
+  const v = [Math.sin(peakAz) * Math.cos(maxEl), Math.sin(maxEl), Math.cos(peakAz) * Math.cos(maxEl)];
+  const u = [Math.sin(peakAz + Math.PI / 2), 0, Math.cos(peakAz + Math.PI / 2)];
+  return th => { const c = Math.cos(th), s = Math.sin(th); const x = c * u[0] + s * v[0], y = c * u[1] + s * v[1], z = c * u[2] + s * v[2]; return { az: Math.atan2(x, z), el: Math.asin(clamp(y, -1, 1)) }; };
+}
+const slant = (el, alt) => Math.sqrt((RE + alt) ** 2 - (RE * Math.cos(el)) ** 2) - RE * Math.sin(el);
+const compass = a => ((a / DEG) % 360 + 360) % 360;
+
+/* =========================================================================
+   Pass scheduling & simulation state
+   ========================================================================= */
+let simNow = Date.now();
+const passes = [];
+let passSeq = 2318;
+let nextAOS = simNow - 9 * 60000;
+const stats = { dataTB: 31.62, passes: 268, planned: 342, ok: 266, total: 268, degraded: 2, spark: Array.from({ length: 28 }, (_, i) => 2.2 + Math.sin(i * .6) * .6 + Math.random() * .5) };
+
+// a few completed passes so the history isn't empty
+for (let i = 6; i >= 1; i--) {
+  const tA = simNow - (i * 7 + 14) * 60000, sat = sats[(i * 5) % 24], dish = dishes[i % 6], band = i % 3 === 0 ? 'Ka' : i % 4 === 0 ? 'S' : 'X';
+  passes.push({ id: 'P-' + (passSeq - 7 + (6 - i)), sat, dish, band, tAOS: tA, tLOS: tA + 8.5 * 60000, maxEl: rand(20, 80) * DEG, state: 'done', dataGB: band === 'Ka' ? rand(110, 160) : band === 'X' ? rand(35, 62) : rand(.3, .6), tDel: tA + 9.3 * 60000, lostTotal: 0 });
+  sat.lastContact = tA + 8.5 * 60000;
+}
+
+function schedulePass(tAOS) {
+  const r = Math.random(); const band = r < .58 ? 'X' : r < .82 ? 'Ka' : 'S';
+  const maxElD = 12 + Math.pow(Math.random(), .8) * 76;
+  const durSim = (5 + 7 * (maxElD / 88)) * 60000 * rand(.93, 1.07);
+  const tLOS = tAOS + durSim;
+  let cands = dishes.filter(d => d.bands.includes(band) && d.freeAt <= tAOS - PREPOS - 20000);
+  if (!cands.length) return null;
+  cands.sort((a, b) => band === 'Ka' ? b.diam - a.diam : a.freeAt - b.freeAt);
+  const dish = band === 'Ka' ? cands[0] : cands[Math.floor(Math.random() * Math.min(3, cands.length))];
+  const busy = new Set(passes.filter(p => p.state !== 'done' && p.tLOS > tAOS - PREPOS - 60000).map(p => p.sat));
+  const free = sats.filter(s => !busy.has(s)); if (!free.length) return null;
+  const sat = pick(free);
+  dish.freeAt = tLOS + 60000;
+  const p = {
+    id: 'P-' + (passSeq++), sat, dish, band, peakAz: Math.random() * TAU, maxEl: maxElD * DEG, dir: Math.random() < .5 ? 1 : -1,
+    tAOS, tLOS, durSim, state: 'scheduled', dataGB: 0, rate: 0, lost: 0, lostTotal: 0, inflight: 0, arrivals: 0,
+    tLock: null, tDl: null, tDel: null, spawnAcc: 0, upAcc: 0, seed: Math.random() * 100, theta: 0, az: 0, el: 0,
+    world: new THREE.Vector3(), line: null, fadeAlerted: false,
+  };
+  p.track = makeTrack(p.peakAz, p.maxEl);
+  passes.push(p); return p;
+}
+function updateScheduler() {
+  const horizon = simNow + 50 * 60000;
+  let guard = 0;
+  while (nextAOS < horizon && guard++ < 50) { const p = schedulePass(nextAOS); nextAOS += (p ? rand(2.6, 5.0) : 1.0) * 60000; }
+  if (passes.length > 70) { const i = passes.findIndex(p => p.state === 'done'); if (i >= 0) passes.splice(i, 1); }
+}
+const isTracking = p => p && (p.state === 'aos' || p.state === 'lock' || p.state === 'downlink' || p.state === 'lost');
+function passSky(p, th) { return p.track(p.dir > 0 ? th : Math.PI - th); }
+function computeRate(p) {
+  const base = p.band === 'Ka' ? 2400 : p.band === 'X' ? 840 : 8;
+  const elF = .42 + .58 * smooth(4 * DEG, 50 * DEG, p.el);
+  const wx = env.wk === 'snow' ? (p.band === 'Ka' ? .52 : p.band === 'X' ? .9 : 1) : 1;
+  const dishF = p.dish.diam >= 11 ? 1 : .86;
+  return base * elF * wx * dishF * (.97 + .05 * Math.sin(simNow * .0007 + p.seed));
+}
+// km/s: approaching (−) after rise, zero at culmination, receding (+) towards set; ~6.6 km/s peak for a 550 km LEO
+function rangeRate(p) { return -6.6 * Math.cos(p.el) * Math.cos(p.theta); }
+function doppler(p) { const f = p.band === 'Ka' ? 26e9 : p.band === 'X' ? 8.2e9 : 2.2e9; return -f * rangeRate(p) / 299792 / 1000; }
+
+/* =========================================================================
+   Packets (data flowing sat → dish → fibre → processing → subsea cable)
+   ========================================================================= */
+const PK_MAX = 800;
+const pkMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(.85, .85, .85), new THREE.MeshBasicMaterial({ color: '#ffffff' }), PK_MAX);
+pkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pkMesh.frustumCulled = false; pkMesh.setColorAt(0, new THREE.Color()); pkMesh.count = 0; scene.add(pkMesh);
+const PK_DOWN = C_ACC.clone().multiplyScalar(4.5), PK_UP = C_UP.clone().multiplyScalar(4.5), PK_FIB = C_ACC.clone().multiplyScalar(3.2);
+const packets = [];
+function spawnBeam(p, up) { if (packets.length >= PK_MAX) return; packets.push({ kind: 'beam', p, up, t: 0, speed: 1.15 }); p.inflight++; }
+function spawnFiber(path, p, speed = 30) { if (packets.length >= PK_MAX) return; packets.push({ kind: 'fiber', path, p, s: 0, speed }); if (p) p.inflight++; }
+const dummy = new THREE.Object3D();
+let seaAcc = 0, hallIngest = 0;
+function updatePackets(dt) {
+  let n = 0;
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const k = packets[i]; let done = false;
+    if (k.kind === 'beam') {
+      k.t += dt * k.speed;
+      if (k.t >= 1) { done = true; if (!k.up) { k.p.arrivals++; if (k.p.arrivals % 3 === 0) spawnFiber(k.p.dish.fiber, k.p); } }
+      else { const a = k.p.dish.feedW, b = k.p.world; if (k.up) V1.lerpVectors(a, b, k.t); else V1.lerpVectors(b, a, k.t); }
+    } else {
+      k.s += dt * k.speed;
+      if (k.s >= k.path.len) { done = true; if (k.p) hallIngest++; }
+      else pathAt(k.path, k.s, V1);
+    }
+    if (done) { if (k.p) k.p.inflight--; packets[i] = packets[packets.length - 1]; packets.pop(); continue; }
+    dummy.position.copy(V1); dummy.rotation.set(T * 3 + i, T * 2.2, 0); dummy.scale.setScalar(k.kind === 'beam' ? 1 : .7); dummy.updateMatrix();
+    pkMesh.setMatrixAt(n, dummy.matrix); pkMesh.setColorAt(n, k.kind === 'beam' ? (k.up ? PK_UP : PK_DOWN) : PK_FIB); n++;
+  }
+  pkMesh.count = n; pkMesh.instanceMatrix.needsUpdate = true;
+  seaAcc += dt * (1.2 + totalRate() / 700); while (seaAcc > 1) { seaAcc -= 1; spawnFiber(SEA_PATH, null, 22); } if (pkMesh.instanceColor) pkMesh.instanceColor.needsUpdate = true;
+}
+
+/* =========================================================================
+   Smoke
+   ========================================================================= */
+const puffs = [];
+for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: '#E9E7E3', transparent: true, opacity: 0, flatShading: true, depthWrite: false, roughness: 1 })); m.visible = false; world.add(m); puffs.push({ m, life: 1, src: 0 }); }
+let puffAcc = 0, puffIdx = 0;
+function updateSmoke(dt) {
+  puffAcc += dt;
+  if (puffAcc > .32) { puffAcc = 0; const P = puffs[puffIdx++ % puffs.length]; P.life = 0; P.src = puffIdx % 2; const c = power.chimneys[P.src]; P.base = power.g.localToWorld(c.clone()); P.m.visible = true; }
+  const wind = (WEATHER[env.wk].wind || 6) * .5;
+  for (const P of puffs) {
+    if (P.life >= 1) { P.m.visible = false; continue; }
+    P.life += dt / 4.2; const l = P.life;
+    P.m.position.set(P.base.x + l * wind * 2.2, P.base.y + l * 13, P.base.z - l * wind * .8);
+    P.m.scale.setScalar(.9 + l * 3.4); P.m.material.opacity = Math.sin(Math.min(1, l * 1.2) * Math.PI) * .6; P.m.rotation.set(l * 2, l * 3, 0);
+  }
+}
+
+/* =========================================================================
+   Environment: weather & day/night
+   ========================================================================= */
+const WEATHER = {
+  clear: { label: 'Clear', icon: 'sun', desc: 'Low Arctic sun · vis > 30 km', temp: -12, wind: 6, fogNear: 320, fogFar: 1400, sunDay: 3.0, moon: .55, hemiDay: 1.5, hemiNight: .34, snow: 0, aurora: .45, storm: 0, topDay: '#8DB3D9', botDay: '#EADFD6', topNight: '#040915', botNight: '#16253D' },
+  snow: { label: 'Snowfall', icon: 'snow', desc: 'Rain fade on Ka-band · vis 1.8 km', temp: -17, wind: 12, fogNear: 110, fogFar: 820, sunDay: 1.4, moon: .3, hemiDay: 1.8, hemiNight: .4, snow: 1, aurora: 0, storm: 0, topDay: '#BDC7D2', botDay: '#E1E5E9', topNight: '#121922', botNight: '#2A3442' },
+  polar: { label: 'Polar night', icon: 'aurora', desc: 'Aurora borealis · −24°C', temp: -24, wind: 3, fogNear: 340, fogFar: 1500, sunDay: .55, moon: .55, hemiDay: .4, hemiNight: .42, snow: 0, aurora: .85, storm: 0, night: true, topDay: '#040915', botDay: '#16253D', topNight: '#030712', botNight: '#122036' },
+  storm: { label: 'Solar storm', icon: 'storm', desc: 'Kp 7 · scintillation, link drops', temp: -19, wind: 8, fogNear: 340, fogFar: 1500, sunDay: .5, moon: .5, hemiDay: .4, hemiNight: .4, snow: 0, aurora: 1.2, storm: 1, night: true, topDay: '#05060F', botDay: '#1E1830', topNight: '#05060F', botNight: '#1E1830' },
+};
+const env = { night: 0, nightTarget: 0, wk: 'clear' };
+const colCache = {}; const col = h => colCache[h] || (colCache[h] = new THREE.Color(h));
+const cur = { fogNear: 320, fogFar: 1400, sun: 3, hemi: 1.5, snow: 0, aurora: 0, storm: 0, top: new THREE.Color('#8DB3D9'), bot: new THREE.Color('#EADFD6') };
+const tmpC = new THREE.Color(), tmpC2 = new THREE.Color();
+const HEMI_DAY_SKY = col('#DFE9F5'), HEMI_DAY_GND = col('#B9B1A7'), HEMI_NIGHT_SKY = col('#5A74B5'), HEMI_NIGHT_GND = col('#1A2133'), AUR_G = col('#3CFF9E');
+const SUN_DAY_C = col('#FFE7CF'), SUN_NIGHT_C = col('#9DB3FF');
+const AUR_TOP_CALM = col('#3BD3FF'), AUR_TOP_STORM = col('#FF3DC8');
+function updateEnv(dt) {
+  env.night += clamp(env.nightTarget - env.night, -dt * .45, dt * .45);
+  const w = WEATHER[env.wk], n = smooth(0, 1, env.night), k = 1 - Math.exp(-dt * 1.7);
+  cur.fogNear = lerp(cur.fogNear, w.fogNear, k); cur.fogFar = lerp(cur.fogFar, w.fogFar, k);
+  cur.sun = lerp(cur.sun, lerp(w.sunDay, w.moon, n), k); cur.hemi = lerp(cur.hemi, lerp(w.hemiDay, w.hemiNight, n), k);
+  cur.snow = lerp(cur.snow, w.snow, k); cur.storm = lerp(cur.storm, w.storm, k);
+  cur.aurora = lerp(cur.aurora, w.aurora * smooth(.3, .95, env.night), k);
+  tmpC.copy(col(w.topDay)).lerp(col(w.topNight), n); cur.top.lerp(tmpC, k);
+  tmpC.copy(col(w.botDay)).lerp(col(w.botNight), n); cur.bot.lerp(tmpC, k);
+  skyMat.uniforms.top.value.copy(cur.top); skyMat.uniforms.bot.value.copy(cur.bot);
+  scene.fog.color.copy(cur.bot); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogFar;
+  sun.intensity = cur.sun; sun.color.copy(SUN_DAY_C).lerp(SUN_NIGHT_C, n);
+  V1.copy(SUN_DAY).lerp(SUN_NIGHT, n).normalize(); sun.position.copy(sun.target.position).addScaledVector(V1, 500);
+  hemi.intensity = cur.hemi; hemi.color.copy(HEMI_DAY_SKY).lerp(HEMI_NIGHT_SKY, n).lerp(AUR_G, clamp(cur.aurora * .32 * n, 0, .5)); hemi.groundColor.copy(HEMI_DAY_GND).lerp(HEMI_NIGHT_GND, n);
+  windowMat.emissiveIntensity = lerp(0, 1.7, n) + cur.snow * .4;
+  lampMat.emissiveIntensity = lerp(0, 2.2, n) + cur.snow * .8;
+  headMat.emissiveIntensity = lerp(.3, 3, n) + cur.snow * 1.5;
+  ledMat.emissiveIntensity = 1 + n;
+  for (const lp of lightPools) lp.material.opacity = (n * .26 + cur.snow * .1);
+  bloom.strength = lerp(.25, .5, n); bloom.threshold = lerp(1.05, .82, n);
+  renderer.toneMappingExposure = lerp(1.0, 1.18, n);
+  stars.material.opacity = n * (1 - cur.snow) * .9;
+  tmpC2.copy(AUR_TOP_CALM).lerp(AUR_TOP_STORM, cur.storm);
+  for (const am of auroraMats) { am.uniforms.uTime.value = T; am.uniforms.uInt.value = cur.aurora; am.uniforms.uC2.value.copy(tmpC2); }
+  snowFx.pts.visible = cur.snow > .02; snowFx.pts.material.opacity = cur.snow * .95;
+  const th = env.night > .5 ? 'night' : 'day'; if (document.body.dataset.theme !== th) document.body.dataset.theme = th;
+}
+function updateSnow(dt) {
+  if (!snowFx.pts.visible) return;
+  const { p, v, N } = snowFx; const wind = WEATHER[env.wk].wind * .6;
+  for (let i = 0; i < N; i++) {
+    const j = i * 3; p[j + 1] -= v[i] * dt; p[j] += (wind + Math.sin(T * .7 + i) * 1.2) * dt; p[j + 2] += Math.cos(T * .5 + i * .3) * .8 * dt;
+    if (p[j + 1] < 0) p[j + 1] += 190; if (p[j] > 260) p[j] -= 520; if (p[j] < -260) p[j] += 520;
+  }
+  snowFx.pts.geometry.attributes.position.needsUpdate = true;
+  snowFx.pts.position.set(lerp(controls.target.x, camera.position.x, .55), 0, lerp(controls.target.z, camera.position.z, .55));
+}
+
+/* =========================================================================
+   Alerts & toasts
+   ========================================================================= */
+const alerts = []; let unread = 0;
+const toastsEl = $('#toasts');
+function raise(level, title, body, silent = false) {
+  alerts.unshift({ level, title, body, t: simNow }); if (alerts.length > 40) alerts.pop();
+  if (!silent) { unread++; toast(level, title, body); }
+  renderBadge(); if ($('#alertsMenu').classList.contains('open')) renderAlerts();
+}
+function toast(level, title, body) {
+  const el = document.createElement('div'); el.className = 'toast glass';
+  el.innerHTML = `<i class="tl lv-${level}"></i><div><b>${title}</b><span>${body}</span></div>`;
+  toastsEl.prepend(el); while (toastsEl.children.length > 3) toastsEl.lastChild.remove();
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4200);
+}
+function renderBadge() { const b = $('#alertsBadge'); b.textContent = unread; b.classList.toggle('zero', unread === 0); }
+function renderAlerts() {
+  $('#alertsMenu').innerHTML = `<div class="al-head"><b>Alerts</b><span class="eyebrow">${alerts.length} events</span></div>` +
+    alerts.slice(0, 18).map(a => `<div class="al-item"><i class="lv-${a.level}"></i><div><b>${a.title}</b><span>${a.body}</span></div><time>${fmtHM(a.t)}</time></div>`).join('');
+}
+raise('info', 'Shift handover complete', 'Ingrid Holm on console · 6 antennas nominal', true);
+raise('ok', 'Kestrel-14 downlink verified', 'Checksum OK · 58.2 GB delivered to processing', true);
+raise('warn', 'DL-4 LNA temperature drift', '+1.8 K over 30 min · monitoring', true);
+unread = 2; renderBadge();
+
+/* =========================================================================
+   Pass life cycle
+   ========================================================================= */
+const lineMats = { acc: new THREE.LineDashedMaterial({ color: C_ACC.clone().multiplyScalar(1.6), dashSize: 3, gapSize: 3, transparent: true, opacity: .55, fog: false }), up: new THREE.LineDashedMaterial({ color: C_UP.clone().multiplyScalar(1.6), dashSize: 3, gapSize: 3, transparent: true, opacity: .55, fog: false }) };
+function addTrackLine(p) {
+  const pts = []; for (let i = 0; i <= 64; i++) { const a = passSky(p, i / 64 * Math.PI); pts.push(domePoint(a.az, a.el, new THREE.Vector3())); }
+  const g = new THREE.BufferGeometry().setFromPoints(pts); const l = new THREE.Line(g, p.band === 'S' ? lineMats.up : lineMats.acc); l.computeLineDistances(); scene.add(l); p.line = l;
+}
+function finishContact(p) {
+  stats.passes++; stats.total++;
+  if (p.lostTotal < 6) stats.ok++; else { stats.degraded++; raise('warn', `${p.id} degraded`, `${p.sat.name} via ${p.dish.id} · ${p.lostTotal.toFixed(0)} s without lock`); }
+  p.dish.passesToday++; p.dish.lastPass = p; p.sat.lastContact = simNow;
+  if (p.line) { scene.remove(p.line); p.line.geometry.dispose(); p.line = null; }
+}
+function updatePasses(dt) {
+  const now = simNow;
+  for (const p of passes) {
+    if (p.state === 'done') continue;
+    if (now < p.tAOS - PREPOS) { p.state = 'scheduled'; continue; }
+    if (now < p.tAOS) { if (p.state === 'scheduled') { p.state = 'prepos'; p.dish.pass = p; } continue; }
+    if (now < p.tLOS) {
+      p.dish.pass = p; p.sat.pass = p;
+      p.theta = (now - p.tAOS) / p.durSim * Math.PI;
+      const a = passSky(p, p.theta); p.az = a.az; p.el = a.el; domePoint(p.az, p.el, p.world);
+      if (!p.line) addTrackLine(p);
+      const since = now - p.tAOS;
+      const st = since < LOCK_AT ? 'aos' : since < DL_AT ? 'lock' : 'downlink';
+      if (st !== 'aos' && !p.tLock) p.tLock = p.tAOS + LOCK_AT;
+      if (st === 'downlink' && !p.tDl) { p.tDl = p.tAOS + DL_AT; for (let i = 0; i < 4; i++) setTimeout(() => spawnBeam(p, true), i * 90); }
+      if (p.lost > 0) { p.lost -= dt; p.lostTotal += dt * SIM; if (p.lost <= 0) raise('ok', `Re-acquired · ${p.dish.id}`, `${p.sat.name} carrier lock restored`); }
+      else if (st === 'downlink' && cur.storm > .5 && Math.random() < dt * .05) { p.lost = rand(2.2, 4.5); raise('crit', `Link lost · ${p.dish.id} ↔ ${p.sat.name}`, 'Ionospheric scintillation · Kp 7'); }
+      if (st === 'downlink' && env.wk === 'snow' && p.band === 'Ka' && !p.fadeAlerted) { p.fadeAlerted = true; raise('warn', `Rain fade · ${p.dish.id} Ka-band`, `−4.1 dB margin · ${p.sat.name} rate reduced`); }
+      p.state = p.lost > 0 ? 'lost' : st;
+      p.rate = (st === 'downlink' && p.lost <= 0) ? computeRate(p) : 0;
+      const gb = p.rate * dt * SIM / 8000;
+      p.dataGB += gb; p.sat.buffer = Math.max(1.2, p.sat.buffer - gb); stats.dataTB += gb / 1000; p.dish.dataToday += gb;
+      if (p.rate > 0) { p.spawnAcc += dt; const iv = p.band === 'S' ? .45 : p.band === 'Ka' ? .055 : .085; while (p.spawnAcc > iv) { p.spawnAcc -= iv; spawnBeam(p, false); } }
+      if (st !== 'aos' && p.lost <= 0) { p.upAcc += dt; const ui = p.band === 'S' ? .4 : 2.4; if (p.upAcc > ui) { p.upAcc = 0; spawnBeam(p, true); } }
+    } else {
+      if (p.state !== 'los' && p.state !== 'delivered') {
+        p.state = 'los'; p.rate = 0; if (p.dish.pass === p) p.dish.pass = null; if (p.sat.pass === p) p.sat.pass = null; finishContact(p);
+        if (p.sat.buffer > 225) raise('warn', `${p.sat.name} buffer high`, `${p.sat.buffer.toFixed(0)} / 256 GB after LOS · prioritise next pass`);
+      }
+      if (p.state === 'los' && p.inflight <= 0 && now > p.tLOS + 25000) { p.state = 'delivered'; p.tDel = now; }
+      if (p.state === 'delivered' && now > p.tDel + 6 * 60000) p.state = 'done';
+    }
+  }
+}
+
+/* =========================================================================
+   Antennas, satellites, beams
+   ========================================================================= */
+function aimAt(d, target) { const dx = target.x - d.pivotW.x, dy = target.y - d.pivotW.y, dz = target.z - d.pivotW.z; d.tAz = Math.atan2(dx, dz); d.tEl = Math.atan2(dy, Math.hypot(dx, dz)); }
+function updateDishes(dt) {
+  for (const d of dishes) {
+    const p = d.pass; let rate = .8;
+    if (p && p.state === 'prepos') { const a = passSky(p, .02); domePoint(a.az, Math.max(a.el, 3 * DEG), V2); aimAt(d, V2); rate = 1.5; }
+    else if (isTracking(p)) { aimAt(d, p.world); rate = 3; }
+    else d.tEl = Math.PI / 2;
+    d.az += clamp(wrapPi(d.tAz - d.az), -rate * dt, rate * dt);
+    d.el += clamp(d.tEl - d.el, -rate * dt, rate * dt);
+    d.azG.rotation.y = d.az; d.elG.rotation.x = -d.el;
+    d.feed.getWorldPosition(d.feedW);
+    // beam
+    const on = isTracking(p) && p.state !== 'lost';
+    d.beam.visible = d.glow.visible = on;
+    if (on) {
+      V2.subVectors(p.world, d.feedW); const L = V2.length(); V2.normalize();
+      for (const m of [d.beam, d.glow]) { m.position.copy(d.feedW).addScaledVector(V2, L / 2); m.quaternion.setFromUnitVectors(YUP, V2); m.scale.set(1, L, 1); }
+      const c = p.band === 'S' ? C_UP : C_ACC;
+      d.beam.material.color.copy(c).multiplyScalar(lerp(3.2, 1.6, env.night)); d.glow.material.color.copy(c).multiplyScalar(lerp(1.3, .6, env.night));
+      const fl = p.state === 'aos' ? (.12 + .14 * Math.random()) : p.state === 'lock' ? .35 : .5 + .08 * Math.sin(T * 9 + p.seed);
+      d.beam.material.opacity = fl; d.glow.material.opacity = fl * .14;
+    }
+    if (d.radome) {
+      const target = (selected && selected.dish === d) ? .3 : 1;
+      d.radomeOp += (target - d.radomeOp) * Math.min(1, dt * 4);
+      d.radome.material.opacity = d.radomeOp; d.radome.material.depthWrite = d.radomeOp > .98;
+    }
+  }
+}
+function updateSats() {
+  for (const s of sats) {
+    const p = s.pass; const vis = !!(p && isTracking(p));
+    s.vis = vis; s.model.visible = vis;
+    if (!vis) continue;
+    s.model.position.copy(p.world); s.model.lookAt(DOME.cx, 0, DOME.cz);
+    s.halo.material.opacity = .25 + env.night * .45 + (p.state === 'lost' ? .3 * Math.sin(T * 12) : 0);
+    s.halo.material.color.copy(p.state === 'lost' ? col('#FF3B3B') : (p.band === 'S' ? C_UP : C_ACC)).multiplyScalar(1.5);
+  }
+}
+
+/* =========================================================================
+   Vehicles & ship update
+   ========================================================================= */
+function updateVehicles(dt) {
+  for (const v of vehicles) {
+    let target = v.vmax; v.status = 'Moving';
+    if (v.stops.length) {
+      const st = v.stops[v.stopIdx]; const dStop = ((st.u - v.u + 1) % 1) * LOOP_LEN;
+      if (v.wait > 0) { v.wait -= dt; target = 0; v.status = `Stopped · ${st.at}`; if (v.wait <= 0) v.stopIdx = (v.stopIdx + 1) % v.stops.length; }
+      else { if (dStop < 1.2 && dStop > -1) { v.wait = st.dur; target = 0; } else target = Math.min(target, Math.sqrt(2 * 2.5 * Math.max(0, dStop - .8)) + .4); }
+    }
+    let gap = 1e9; for (const o of vehicles) if (o !== v) { const d = ((o.u - v.u + 1) % 1) * LOOP_LEN; if (d > 0 && d < gap) gap = d; }
+    const follow = Math.max(0, (gap - 12) * 1.1);
+    if (follow < target) { target = follow; if (v.wait <= 0 && follow < v.vmax * .6) v.status = 'Yielding'; }
+    v.speed += clamp(target - v.speed, -10 * dt, 3.5 * dt);
+    v.u = (v.u + v.speed * dt / LOOP_LEN + 1) % 1;
+    const p = loopCurve.getPointAt(v.u), t = loopCurve.getTangentAt(v.u);
+    const x = p.x - t.z * 1.4, z = p.z + t.x * 1.4;
+    v.model.position.set(x, ground(x, z) + .32, z); v.model.rotation.y = Math.atan2(t.x, t.z);
+  }
+  beaconMat.emissiveIntensity = (T % .8) < .4 ? 6 : .3;
+}
+const SHIP_IN_LEN = SHIP_IN.getLength(), SHIP_OUT_LEN = SHIP_OUT.getLength();
+let shipAlertDone = false;
+function updateShip(dt) {
+  const sh = ship; let curve = null, u = 0;
+  if (sh.state === 'inbound') {
+    sh.speed = 9 * (.18 + .82 * smooth(0, 90, SHIP_IN_LEN - sh.s)); sh.s += sh.speed * dt; curve = SHIP_IN; u = Math.min(1, sh.s / SHIP_IN_LEN);
+    if (sh.s >= SHIP_IN_LEN) { sh.state = 'alongside'; sh.timer = 32; sh.speed = 0; raise('info', 'MV Isbjørn alongside', 'Nordby pier · fuel & supplies discharge'); }
+  } else if (sh.state === 'alongside') { sh.timer -= dt; sh.speed = 0; if (sh.timer <= 0) { sh.state = 'outbound'; sh.s = 0; } }
+  else if (sh.state === 'outbound') {
+    sh.speed = 9 * (.2 + .8 * smooth(0, 60, sh.s)); sh.s += sh.speed * dt; curve = SHIP_OUT; u = Math.min(1, sh.s / SHIP_OUT_LEN);
+    if (sh.s >= SHIP_OUT_LEN) { sh.state = 'away'; sh.timer = 26; sh.model.visible = false; }
+  } else if (sh.state === 'away') { sh.timer -= dt; if (sh.timer <= 0) { sh.state = 'inbound'; sh.s = 0; sh.model.visible = true; } }
+  if (curve) {
+    const p = curve.getPointAt(u), t = curve.getTangentAt(u); sh.model.position.x = p.x; sh.model.position.z = p.z;
+    const ty = Math.atan2(t.x, t.z); sh.yaw += wrapPi(ty - sh.yaw) * Math.min(1, dt * .9);
+  }
+  sh.model.rotation.set(Math.sin(T * .9) * .015, sh.yaw, Math.sin(T * .7) * .025);
+  sh.model.position.y = Math.sin(T * 1.1) * .18;
+  harbour.boats.forEach((b, i) => { b.position.y = Math.sin(T * 1.3 + i * 2) * .2; b.rotation.z = Math.sin(T * 1.1 + i) * .05; });
+  for (const f of floes) { f.position.x -= f.userData.v * dt; f.position.y = .15 + Math.sin(T * .9 + f.userData.ph) * .15; f.rotation.y += dt * .02; if (f.position.x < -420) f.position.x = 200; }
+}
+
+/* =========================================================================
+   Camera, controls, selection
+   ========================================================================= */
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = .08;
+controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
+controls.screenSpacePanning = false; controls.minDistance = 25; controls.maxDistance = 640;
+controls.maxPolarAngle = 1.48; controls.minPolarAngle = .15; controls.zoomSpeed = 1.1;
+
+const AREAS = {
+  field: { label: 'Antenna field', t: [0, 20, -48], d: 360, p: 1.18, th: .62 },
+  ops: { label: 'Operations', t: [5, 6, -2], d: 96, p: 1.04, th: .72 },
+  processing: { label: 'Processing', t: [-48, 6, 4], d: 96, p: 1.04, th: -.45 },
+  fjord: { label: 'Fjord', t: [-60, 2, 70], d: 250, p: 1.1, th: -.25 },
+  sky: { label: 'Sky', t: [0, 52, -60], d: 440, p: 1.3, th: .45 },
+};
+const AURORA_SHOT = { t: [0, 40, -40], d: 300, p: 1.46, th: .35 };
+camera.position.set(0, 40, -40).add(new THREE.Vector3().setFromSpherical(new THREE.Spherical(820, 1.2, .15)));
+controls.target.set(0, 40, -40); controls.update();
+
+let fly = null, follow = null; const followLast = new THREE.Vector3();
+function flyTo(target, dist, polar, theta, ent = null, dur = 1.6) {
+  const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+  const from = new THREE.Spherical().setFromVector3(off);
+  const to = new THREE.Spherical(dist ?? from.radius, polar ?? from.phi, theta ?? from.theta);
+  to.theta = from.theta + wrapPi(to.theta - from.theta);
+  fly = { t: 0, dur, fromT: controls.target.clone(), toT: target.clone(), from, to, ent }; follow = null; controls.enabled = false;
+}
+function flyToArea(key) {
+  const a = AREAS[key] || key; const k = camera.aspect < 1 ? 1.55 : 1; flyTo(new THREE.Vector3(...a.t), a.d * k, a.p, a.th, null, 1.8);
+  document.querySelectorAll('#areas button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+}
+const SPH = new THREE.Spherical();
+function updateCamera(dt) {
+  if (fly && fly.ent && !fly.ent.active()) { fly = null; controls.enabled = true; flyToArea('field'); }
+  if (fly) {
+    fly.t += dt / fly.dur; const k = easeIO(Math.min(1, fly.t));
+    const tgt = fly.ent ? fly.ent.pos(V3) : fly.toT;
+    controls.target.lerpVectors(fly.fromT, tgt, k);
+    SPH.set(lerp(fly.from.radius, fly.to.radius, k), lerp(fly.from.phi, fly.to.phi, k), lerp(fly.from.theta, fly.to.theta, k));
+    camera.position.setFromSpherical(SPH).add(controls.target);
+    if (fly.t >= 1) { controls.enabled = true; if (fly.ent && fly.ent.moving) { follow = fly.ent; followLast.copy(tgt); } fly = null; }
+  } else if (follow) {
+    if (!follow.active()) { const wasSat = follow.type === 'sat'; follow = null; if (wasSat) flyToArea('field'); }
+    else { follow.pos(V3); V2.subVectors(V3, followLast); controls.target.add(V2); camera.position.add(V2); followLast.copy(V3); }
+  } else {
+    const t = controls.target; const cx = clamp(t.x, -320, 320), cz = clamp(t.z, -260, 300), cy = clamp(t.y, 0, 140);
+    if (cx !== t.x || cz !== t.z || cy !== t.y) { V2.set(cx - t.x, cy - t.y, cz - t.z); t.add(V2); camera.position.add(V2); }
+  }
+  controls.update();
+}
+
+// selection ring
+const ringMat = new THREE.MeshBasicMaterial({ color: C_ACC.clone().multiplyScalar(2.2), transparent: true, opacity: .95, side: THREE.DoubleSide, depthTest: false, depthWrite: false, fog: false });
+const ring = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 64), ringMat); ring.renderOrder = 20;
+const ring2 = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 64), ringMat.clone()); ring2.renderOrder = 20;
+ring.visible = ring2.visible = false; scene.add(ring, ring2);
+function updateRing() {
+  const e = selected;
+  if (!e || !e.active()) { ring.visible = ring2.visible = false; return; }
+  ring.visible = ring2.visible = true; e.pos(V1);
+  if (e.sky) { for (const r of [ring, ring2]) { r.position.copy(V1); r.quaternion.copy(camera.quaternion); } }
+  else { for (const r of [ring, ring2]) { r.position.set(V1.x, ground(V1.x, V1.z) + .7, V1.z); r.rotation.set(-Math.PI / 2, 0, 0); } }
+  const R = e.radius; ring.scale.setScalar(R * (1 + .04 * Math.sin(T * 5))); const k = (T * .7) % 1; ring2.scale.setScalar(R * (1 + k * .7)); ring2.material.opacity = (1 - k) * .7;
+}
+
+let selected = null;
+function select(e, { fly: doFly = true } = {}) {
+  if (selected && selected.label) selected.label.el.classList.remove('sel');
+  selected = e || null;
+  if (selected && selected.label) selected.label.el.classList.add('sel');
+  renderPanelSkeleton(); tickPanel(); renderTable(); tickTracker();
+  if (selected && doFly) {
+    if (selected.type === 'sat' && !selected.active()) { flyToArea('sky'); }
+    else { selected.pos(V1); flyTo(V1, selected.focusDist, selected.polar, undefined, selected.moving ? selected : null); }
+  }
+  if (!selected) follow = null;
+  if (isMobile() && selected) { setSheet('detail'); $('#sheet').classList.remove('min'); }
+}
+
+// picking
+const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+let down = null, hoverT = 0;
+function hitTest(x, y) {
+  ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  const list = pickables.filter(m => m.userData.ent.active());
+  const h = ray.intersectObjects(list, false); return h.length ? h[0].object.userData.ent : null;
+}
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, b: e.button, moved: false }; closeMenus(); });
+canvas.addEventListener('pointermove', e => {
+  if (down) { if (!down.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) { down.moved = true; if (down.b === 0) follow = null; } return; }
+  const now = performance.now(); if (now - hoverT < 70) return; hoverT = now;
+  canvas.style.cursor = hitTest(e.clientX, e.clientY) ? 'pointer' : '';
+});
+canvas.addEventListener('pointerup', e => {
+  if (down && !down.moved && down.b === 0) { const ent = hitTest(e.clientX, e.clientY); if (ent) select(ent); else if (selected) select(null); }
+  down = null;
+});
+
+/* =========================================================================
+   Entity registry
+   ========================================================================= */
+const groundPos = (obj, dy) => out => obj.getWorldPosition(out).add(V2.set(0, dy, 0));
+function bandList(d) { return d.bands.join(' / '); }
+function dishStatus(d) {
+  const p = d.pass;
+  if (p) { if (p.state === 'prepos') return { cls: 'up', text: 'Pre-positioning' }; if (p.state === 'aos') return { cls: 'warn', text: 'Acquiring' }; if (p.state === 'lock') return { cls: 'acc', text: 'Locked' }; if (p.state === 'lost') return { cls: 'bad', text: 'Link lost' }; if (p.state === 'downlink') return { cls: 'ok', text: 'Downlinking' }; }
+  if (Math.abs(d.el - Math.PI / 2) > .03) return { cls: 'mute', text: 'Returning' };
+  return { cls: 'mute', text: 'Stowed' };
+}
+function passStatus(p) {
+  switch (p.state) {
+    case 'scheduled': return { cls: 'mute', text: 'Scheduled' }; case 'prepos': return { cls: 'up', text: 'Pre-pos' };
+    case 'aos': return { cls: 'warn', text: 'AOS' }; case 'lock': return { cls: 'acc', text: 'Lock' };
+    case 'downlink': return { cls: 'ok', text: 'Downlink' }; case 'lost': return { cls: 'bad', text: 'Link lost' };
+    case 'los': return { cls: 'up', text: 'Delivering' }; default: return { cls: 'ok', text: 'Delivered' };
+  }
+}
+const pill = s => `<span class="pill ${s.cls}">${s.text}</span>`;
+const nextPassOf = s => passes.filter(p => p.sat === s && (p.state === 'scheduled' || p.state === 'prepos')).sort((a, b) => a.tAOS - b.tAOS)[0];
+const nextPassOfDish = d => passes.filter(p => p.dish === d && (p.state === 'scheduled' || p.state === 'prepos')).sort((a, b) => a.tAOS - b.tAOS)[0];
+const activePasses = () => passes.filter(p => isTracking(p)).sort((a, b) => a.tAOS - b.tAOS);
+const totalRate = () => passes.reduce((s, p) => s + (isTracking(p) ? p.rate : 0), 0);
+
+for (const d of dishes) {
+  const e = addEnt({ id: d.id, type: 'dish', name: d.id, icon: 'dish', dish: d, root: d.root, radius: d.radome ? 11 : 6.5 * d.diam / 10 + 2, focusDist: 62 + d.diam * 2, polar: 1.12, search: d.kind + ' antenna ' + bandList(d), plot: true,
+    pos: out => out.copy(d.root.position).add(V2.set(0, d.pivotH * .7, 0)) });
+  addLabel(e, `<i class="d"></i><b>${d.id}</b><span class="sub">Stowed</span>`, '', d.pivotH + d.diam / 2 + 2.5, { maxD: 760 });
+}
+for (const s of sats) {
+  const e = addEnt({ id: s.id, type: 'sat', name: s.name, icon: 'sat', sat: s, root: s.model, radius: 9, focusDist: 74, polar: 1.15, sky: true, moving: true, active: () => s.vis, search: 'NORAD ' + s.norad + ' kestrel satellite', plot: true,
+    pos: out => out.copy(s.model.position) });
+  addLabel(e, `${ic('sat')}<b>${s.name}</b><span class="sub"></span>`, 'sat', 10, { show: () => s.vis, maxD: 1200 });
+}
+const BUILDINGS = [
+  { id: 'ops', name: 'Operations centre', icon: 'building', root: ops.g, dy: 14, r: 18, search: 'control room ops' },
+  { id: 'proc', name: 'Processing hall', icon: 'server', root: proc.g, dy: 12, r: 18, search: 'data centre processing ingest' },
+  { id: 'power', name: 'Power plant', icon: 'bolt', root: power.g, dy: 19, r: 14, search: 'diesel generators fuel' },
+  { id: 'cls', name: 'Cable landing', icon: 'cable', root: cls.g, dy: 7, r: 9, search: 'subsea fibre cable' },
+];
+for (const b of BUILDINGS) {
+  const e = addEnt({ id: b.id, type: 'building', name: b.name, icon: b.icon, root: b.root, radius: b.r, focusDist: 92, polar: 1.05, search: b.search, pos: groundPos(b.root, 4) });
+  addLabel(e, `${ic(b.icon)}<span>${b.name}</span>`, 'small', b.dy, { maxD: 470 });
+}
+{
+  const vg = new THREE.Group(); vg.position.set(88, ground(88, 46), 46); world.add(vg);
+  const e = addEnt({ id: 'village', type: 'site', name: 'Nordby village', icon: 'house', root: null, radius: 40, focusDist: 170, polar: 1.0, search: 'houses town settlement', pos: out => out.copy(vg.position) });
+  for (const h of houses) h.traverse(m => { if (m.isMesh) { m.userData.ent = e; pickables.push(m); } });
+  addLabel(e, `${ic('house')}<span>Nordby</span>`, 'small', 14, { maxD: 520 });
+}
+for (const v of vehicles) {
+  const e = addEnt({ id: v.id, type: 'vehicle', name: v.name, icon: 'truck', veh: v, root: v.model, radius: 5, focusDist: 52, polar: 1.05, moving: true, search: 'vehicle ' + v.route, pos: out => out.copy(v.model.position).add(V2.set(0, 2, 0)) });
+  addLabel(e, `${ic('truck')}<span>${v.name.split(' ')[0] === 'Snowplough' ? 'SP-2' : v.name.split(' ').pop()}</span>`, 'small', 7, { maxD: 300 });
+}
+{
+  const e = addEnt({ id: 'ship', type: 'ship', name: 'MV Isbjørn', icon: 'ship', root: ship.model, radius: 18, focusDist: 110, polar: 1.08, moving: true, active: () => ship.model.visible, search: 'supply vessel ship harbour', pos: out => out.copy(ship.model.position).add(V2.set(0, 4, 0)) });
+  addLabel(e, `${ic('ship')}<span>MV Isbjørn</span>`, 'small', 14, { show: () => ship.model.visible, maxD: 700 });
+}
+const stationEnt = { id: 'station', type: 'station', name: 'Nordlys Polar', icon: 'station', plot: true };
+
+/* =========================================================================
+   Labels update
+   ========================================================================= */
+function updateLabels() {
+  const w = innerWidth, h = innerHeight;
+  for (const L of labelList) {
+    if (!L.show() || (L.e.active && !L.e.active())) { if (L.vis) { L.el.style.display = 'none'; L.vis = false; } continue; }
+    L.e.pos(V1); V1.y += L.dy - (L.e.type === 'dish' ? L.e.dish.pivotH * .7 : L.e.type === 'building' ? 4 : L.e.type === 'vehicle' ? 2 : L.e.type === 'ship' ? 4 : 0);
+    const dist = V1.distanceTo(camera.position); V1.project(camera);
+    if (V1.z > 1 || dist > L.maxD || Math.abs(V1.x) > 1.2 || Math.abs(V1.y) > 1.2) { if (L.vis) { L.el.style.display = 'none'; L.vis = false; } continue; }
+    if (!L.vis) { L.el.style.display = ''; L.vis = true; }
+    L.el.style.transform = `translate3d(${((V1.x * .5 + .5) * w).toFixed(1)}px,${((-V1.y * .5 + .5) * h).toFixed(1)}px,0) translate(-50%,calc(-100% - 6px))`;
+    L.el.style.zIndex = String(10000 - Math.round(dist));
+  }
+}
+function tickLabels() {
+  for (const d of dishes) {
+    const L = byId[d.id].label, st = dishStatus(d), p = d.pass;
+    L.dot.className = 'd ' + st.cls;
+    L.sub.textContent = p ? (p.state === 'prepos' ? `→ ${p.sat.name}` : p.state === 'lost' ? 'LINK LOST' : `${p.sat.name} · ${p.rate > 0 ? fmtRate(p.rate) : st.text}`) : st.text;
+  }
+  for (const s of sats) { if (!s.vis) continue; const p = s.pass; byId[s.id].label.sub.textContent = p.state === 'lost' ? 'LINK LOST' : `el ${(p.el / DEG).toFixed(0)}° · ${p.band} ${p.rate > 0 ? fmtRate(p.rate) : passStatus(p).text}`; }
+}
+
+/* =========================================================================
+   UI: top bar
+   ========================================================================= */
+$('#searchIco').innerHTML = ic('search'); $('#bellIco').innerHTML = ic('bell');
+$('#kIc1').innerHTML = ic('data'); $('#kIc2').innerHTML = ic('orbit'); $('#kIc3').innerHTML = ic('signal');
+$('#dayNight').children[0].innerHTML = ic('sun'); $('#dayNight').children[1].innerHTML = ic('moon');
+$('#areas').innerHTML = Object.entries(AREAS).map(([k, a]) => `<button data-k="${k}">${a.label}</button>`).join('');
+$('#areas').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { follow = null; flyToArea(b.dataset.k); } });
+
+function renderWeather() {
+  const w = WEATHER[env.wk];
+  $('#wxIco').innerHTML = ic(w.icon); $('#wxTemp').textContent = `−${Math.abs(w.temp)}°C`; $('#wxLabel').textContent = w.label;
+  $('#weatherMenu').innerHTML = Object.entries(WEATHER).map(([k, x]) => `<button class="wx-opt ${k === env.wk ? 'on' : ''}" data-k="${k}">${ic(x.icon)}<div><b>${x.label}</b><small>${x.desc}</small></div></button>`).join('');
+}
+function setWeather(k) {
+  if (k === env.wk) return;
+  env.wk = k; const w = WEATHER[k];
+  if (w.night) setNight(true, true);
+  if (k === 'storm') raise('crit', 'Geomagnetic storm G3 · Kp 7', 'Expect scintillation and short link drops on all bands');
+  else if (k === 'snow') raise('warn', 'Snowfall over the plateau', 'Ka-band rain fade expected · visibility 1.8 km');
+  else if (k === 'polar') raise('info', 'Polar night', 'Floodlights on · aurora activity moderate (Kp 4)');
+  else raise('ok', 'Weather clearing', 'All bands nominal · wind 6 m/s');
+  if ((k === 'polar' || k === 'storm') && !follow) { const a = AURORA_SHOT; flyTo(new THREE.Vector3(...a.t), a.d, a.p, a.th, null, 2.4); document.querySelectorAll('#areas button').forEach(b => b.classList.remove('on')); }
+  renderWeather();
+}
+function setNight(on, internal = false) {
+  env.nightTarget = on ? 1 : 0;
+  if (!on && WEATHER[env.wk].night && !internal) { env.wk = 'clear'; renderWeather(); }
+  [...$('#dayNight').children].forEach(b => b.classList.toggle('on', (b.dataset.v === 'night') === on));
+}
+$('#weatherBtn').addEventListener('click', e => { e.stopPropagation(); const m = $('#weatherMenu'); const o = !m.classList.contains('open'); closeMenus(); m.classList.toggle('open', o); });
+$('#weatherMenu').addEventListener('click', e => { const b = e.target.closest('.wx-opt'); if (b) { setWeather(b.dataset.k); closeMenus(); } });
+$('#alertsBtn').addEventListener('click', e => { e.stopPropagation(); const m = $('#alertsMenu'); const o = !m.classList.contains('open'); closeMenus(); if (o) { renderAlerts(); m.classList.add('open'); unread = 0; renderBadge(); } });
+$('#dayNight').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setNight(b.dataset.v === 'night'); });
+function closeMenus() { document.querySelectorAll('.menu.open').forEach(m => m.classList.remove('open')); $('#searchRes').classList.remove('open'); }
+document.addEventListener('click', e => { if (!e.target.closest('.dd') && !e.target.closest('.search')) closeMenus(); });
+renderWeather();
+
+// search
+const sIn = $('#search'), sRes = $('#searchRes'); let sHits = [], sHi = 0;
+function runSearch() {
+  const q = sIn.value.trim().toLowerCase();
+  if (!q) { sRes.classList.remove('open'); return; }
+  sHits = entities.filter(e => (e.name + ' ' + e.id + ' ' + e.search).toLowerCase().includes(q)).slice(0, 7); sHi = 0;
+  sRes.innerHTML = sHits.length ? sHits.map((e, i) => `<button class="sr-item ${i === 0 ? 'hi' : ''}" data-i="${i}">${ic(e.icon)}<b>${e.name}</b><small>${e.type === 'sat' ? (e.sat.vis ? 'in view' : 'satellite') : e.type}</small></button>`).join('') : `<div class="sr-empty">No match for “${q}”</div>`;
+  sRes.classList.add('open');
+}
+sIn.addEventListener('input', runSearch);
+sIn.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && sHits[sHi]) { select(sHits[sHi]); sIn.value = ''; sRes.classList.remove('open'); sIn.blur(); }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sHi = clamp(sHi + (e.key === 'ArrowDown' ? 1 : -1), 0, sHits.length - 1); [...sRes.children].forEach((c, i) => c.classList.toggle('hi', i === sHi)); }
+  if (e.key === 'Escape') { sIn.value = ''; sRes.classList.remove('open'); sIn.blur(); }
+});
+sRes.addEventListener('click', e => { const b = e.target.closest('.sr-item'); if (b) { select(sHits[+b.dataset.i]); sIn.value = ''; sRes.classList.remove('open'); } });
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== sIn) { e.preventDefault(); sIn.focus(); }
+  if (e.key === 'Escape' && document.activeElement !== sIn) { closeMenus(); if (selected) select(null); }
+});
+
+/* =========================================================================
+   UI: KPIs
+   ========================================================================= */
+const sparkCv = $('#sparkData');
+function sizeCanvas(cv, w, h) { const r = Math.min(devicePixelRatio, 2); cv.width = w * r; cv.height = h * r; const g = cv.getContext('2d'); g.setTransform(r, 0, 0, r, 0, 0); return g; }
+const sparkCtx = sizeCanvas(sparkCv, 74, 28);
+function drawSpark() {
+  const g = sparkCtx, d = stats.spark, w = 74, h = 28; g.clearRect(0, 0, w, h);
+  const mx = Math.max(...d) * 1.1, mn = Math.min(...d) * .85;
+  const P = d.map((v, i) => [i / (d.length - 1) * w, h - 2 - (v - mn) / (mx - mn) * (h - 4)]);
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,90,31,.28)'); gr.addColorStop(1, 'rgba(255,90,31,0)');
+  g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.lineTo(w, h); g.lineTo(0, h); g.fillStyle = gr; g.fill();
+  g.beginPath(); P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.strokeStyle = ACCENT; g.lineWidth = 1.6; g.stroke();
+  const [lx, ly] = P[P.length - 1]; g.beginPath(); g.arc(lx - 1, ly, 2.4, 0, TAU); g.fillStyle = ACCENT; g.fill();
+}
+let sparkT = 0;
+function tickKPIs() {
+  $('#kData').textContent = stats.dataTB.toFixed(2);
+  $('#kPass').textContent = stats.passes; $('#kPassOf').textContent = '/ ' + stats.planned;
+  const nx = passes.filter(p => p.state === 'scheduled' || p.state === 'prepos').sort((a, b) => a.tAOS - b.tAOS)[0];
+  $('#kPassSub').innerHTML = nx ? `Next AOS <b class="mono" style="color:var(--ink)">${fmtMS(nx.tAOS - simNow)}</b> · ${nx.sat.name}` : 'No pass scheduled';
+  const pct = stats.ok / stats.total * 100; $('#kLink').textContent = pct.toFixed(2); $('#kLinkBar').style.width = pct + '%';
+  $('#kLinkSub').textContent = `${stats.degraded} degraded contact${stats.degraded === 1 ? '' : 's'} today`;
+  if (simNow - sparkT > 120000) { sparkT = simNow; stats.spark.push(totalRate() / 1000 + 1.4 + Math.random() * .3); if (stats.spark.length > 28) stats.spark.shift(); }
+  drawSpark();
+}
+
+/* =========================================================================
+   UI: detail panel
+   ========================================================================= */
+const detailEl = $('#detail');
+let plotCtx = null;
+function renderPanelSkeleton() {
+  const e = selected || stationEnt;
+  detailEl.innerHTML = `
+    <div class="pd-head">
+      <div class="pd-ico">${ic(e.icon)}</div>
+      <div class="pd-tt"><div class="eyebrow" id="pdChip"></div><div class="pd-title" id="pdTitle"></div><div class="pd-sub" id="pdSub"></div></div>
+      ${selected ? `<button class="x" id="pdClose" aria-label="Close">${ic('close')}</button>` : ''}
+    </div>
+    <div class="pd-status" id="pdStatus"></div>
+    ${e.plot ? `<div class="pd-plot"><canvas id="pdPlot"></canvas><div class="pd-plot-cap" id="pdCap"></div></div>` : ''}
+    <div class="pd-stats" id="pdStats"></div>
+    <div class="pd-bars" id="pdBars"></div>
+    <div class="pd-foot" id="pdFoot"></div>`;
+  plotCtx = e.plot ? sizeCanvas($('#pdPlot'), 126, 126) : null;
+  if (selected) $('#pdClose').addEventListener('click', () => select(null));
+}
+const bar = (label, val, pct, cls = '') => `<div class="pb"><div class="row"><span>${label}</span><b>${val}</b></div><div class="mbar ${cls}"><i style="width:${clamp(pct, 0, 100).toFixed(1)}%"></i></div></div>`;
+function infoFor(e) {
+  if (e.type === 'station') {
+    const act = activePasses(); const nx = passes.filter(p => p.state === 'scheduled' || p.state === 'prepos').sort((a, b) => a.tAOS - b.tAOS)[0];
+    const w = WEATHER[env.wk]; const util = (totalRate() + 2600) / 200;
+    return {
+      chip: 'Ground station · polar', title: 'Nordlys Polar', sub: '78.2297°N · 15.3976°E · 485 m', status: { cls: 'ok', text: 'Operational' }, note: `${act.length} live contact${act.length === 1 ? '' : 's'}`,
+      cap: `<b>${act.length}</b>satellites in view<div class="eyebrow">Next AOS</div>${nx ? `${nx.sat.name} · ${fmtMS(nx.tAOS - simNow)}` : '—'}`,
+      plot: { tracks: act.map(p => ({ p, color: p.band === 'S' ? UPLINK : ACCENT })), points: act.map(p => ({ az: p.az, el: p.el, color: p.state === 'lost' ? '#E5484D' : p.band === 'S' ? UPLINK : ACCENT })) },
+      stats: [['Antennas', '6 · 2 radomes'], ['Live ingest', fmtRate(totalRate())], ['Passes today', stats.passes], ['Data today', stats.dataTB.toFixed(2) + ' TB'], ['Fleet', 'Kestrel × 24'], ['Weather', `−${Math.abs(w.temp)}°C · ${w.wind} m/s`]],
+      bars: bar('Subsea fibre utilisation', util.toFixed(0) + '%', util) + bar('Processing storage', '2.84 / 4.00 PB', 71, 'up'),
+      foot: 'Polar sun-synchronous satellites pass over 78°N on almost every orbit — that is why the station sits here.',
+    };
+  }
+  if (e.type === 'dish') {
+    const d = e.dish, p = d.pass, st = dishStatus(d), trk = isTracking(p);
+    const azD = trk ? compass(p.az) : compass(Math.PI - d.az), elD = trk ? p.el / DEG : d.el / DEG;
+    const np = nextPassOfDish(d);
+    return {
+      chip: `Antenna · ${d.kind}`, title: d.id, sub: `${bandList(d)}-band · G/T ${(d.diam * 2.6 + 4).toFixed(1)} dB/K`, status: st,
+      note: p ? (p.state === 'prepos' ? `slewing to ${p.sat.name} · AOS in ${fmtMS(p.tAOS - simNow)}` : `${p.sat.name} · ${p.band}-band`) : np ? `next: ${np.sat.name} in ${fmtMS(np.tAOS - simNow)}` : 'idle',
+      cap: `<b>${trk ? fmtRate(p.rate) : '—'}</b>${trk ? p.band + '-band downlink' : 'no carrier'}<div class="eyebrow">Pointing</div>az ${azD.toFixed(1)}° · el ${elD.toFixed(1)}°`,
+      plot: { tracks: p ? [{ p, color: p.band === 'S' ? UPLINK : ACCENT }] : [], points: [{ az: trk ? p.az : Math.PI - d.az, el: trk ? p.el : d.el, color: p && p.state === 'lost' ? '#E5484D' : ACCENT, ring: true }] },
+      stats: [['Azimuth', azD.toFixed(2) + '°'], ['Elevation', elD.toFixed(2) + '°'], ['Target', p ? p.sat.name : '—'], ['This pass', p ? p.dataGB.toFixed(1) + ' GB' : '—'], ['Passes today', d.passesToday], ['Data today', d.dataToday.toFixed(0) + ' GB'], ['LNA temp', (d.lna + Math.sin(T * .3) * .3).toFixed(1) + ' K'], ['Pointing err', trk ? (2 + Math.random() * 3).toFixed(1) + ' mdeg' : '—']],
+      bars: trk ? bar('Link margin', (p.state === 'lost' ? -2.1 : 3 + p.el / DEG / 12 - (env.wk === 'snow' && p.band === 'Ka' ? 4.1 : 0)).toFixed(1) + ' dB', p.state === 'lost' ? 4 : 40 + p.el / DEG * .6, p.state === 'lost' ? 'warn' : 'ok') : '',
+      foot: d.radome ? 'Radome shell made transparent while selected.' : '',
+    };
+  }
+  if (e.type === 'sat') {
+    const s = e.sat, p = s.pass, trk = s.vis && isTracking(p), np = nextPassOf(s);
+    const st = trk ? (p.state === 'lost' ? { cls: 'bad', text: 'Link lost' } : p.state === 'aos' ? { cls: 'warn', text: 'Acquiring' } : p.state === 'lock' ? { cls: 'acc', text: 'Locked' } : { cls: 'ok', text: 'Downlinking' }) : { cls: 'mute', text: 'Below horizon' };
+    const rng = trk ? slant(p.el, s.alt) : null;
+    return {
+      chip: 'Satellite · Earth observation', title: s.name, sub: `NORAD ${s.norad} · SSO 97.6° · ${s.alt} km`, status: st,
+      note: trk ? `via ${p.dish.id} · LOS in ${fmtMS(p.tLOS - simNow)}` : np ? `next pass ${fmtHM(np.tAOS)} UTC via ${np.dish.id}` : 'imaging',
+      cap: trk ? `<b>${(p.el / DEG).toFixed(1)}°</b>elevation<div class="eyebrow">Slant range</div>${nf(rng)} km` : `<b>—</b>not in view<div class="eyebrow">Next AOS</div>${np ? fmtMS(np.tAOS - simNow) : '—'}`,
+      plot: { tracks: trk ? [{ p, color: p.band === 'S' ? UPLINK : ACCENT }] : np ? [{ p: np, color: '#8792A2', dash: true }] : [], points: trk ? [{ az: p.az, el: p.el, color: p.state === 'lost' ? '#E5484D' : ACCENT, ring: true }] : [] },
+      stats: [['Azimuth', trk ? compass(p.az).toFixed(1) + '°' : '—'], ['Elevation', trk ? (p.el / DEG).toFixed(1) + '°' : '—'], ['Range', trk ? nf(rng) + ' km' : '—'], ['Doppler', trk ? (doppler(p) >= 0 ? '+' : '') + doppler(p).toFixed(1) + ' kHz' : '—'], ['Downlink', trk ? fmtRate(p.rate) : '—'], ['Antenna', trk ? p.dish.id : np ? np.dish.id + ' (next)' : '—'], ['Battery', s.battery.toFixed(0) + '%'], ['Last contact', s.lastContact ? (simNow - s.lastContact < 60000 ? 'just now' : Math.round((simNow - s.lastContact) / 60000) + ' min ago') : '—']],
+      bars: bar('Onboard buffer', s.buffer.toFixed(1) + ' / 256 GB', s.buffer / 2.56, s.buffer > 220 ? 'warn' : '') + bar('Pass progress', trk ? Math.round(p.theta / Math.PI * 100) + '%' : '—', trk ? p.theta / Math.PI * 100 : 0, 'up'),
+      foot: '',
+    };
+  }
+  if (e.type === 'vehicle') {
+    const v = e.veh;
+    return { chip: 'Vehicle · ground ops', title: v.name, sub: v.route, status: { cls: v.status === 'Moving' ? 'ok' : v.status === 'Yielding' ? 'warn' : 'mute', text: v.status }, note: `driver ${v.driver}`,
+      stats: [['Speed', (v.speed * 3.6).toFixed(0) + ' km/h'], ['Driver', v.driver], ['Next stop', v.stops.length ? v.stops[v.stopIdx].at : 'Loop'], ['Fuel', v.fuel.toFixed(0) + '%']], bars: bar('Route progress', Math.round(v.u * 100) + '%', v.u * 100, 'up'), foot: 'Vehicles keep a 12 m gap and yield on the one-way perimeter loop.' };
+  }
+  if (e.type === 'ship') {
+    const sh = ship, st = { inbound: { cls: 'up', text: 'Inbound' }, alongside: { cls: 'ok', text: 'Alongside' }, outbound: { cls: 'warn', text: 'Outbound' }, away: { cls: 'mute', text: 'At sea' } }[sh.state];
+    return { chip: 'Supply vessel', title: 'MV Isbjørn', sub: 'Coastal supply vessel · 2,400 DWT', status: st, note: sh.state === 'alongside' ? `departs in ${Math.ceil(sh.timer)} s` : 'Nordby pier',
+      stats: [['Speed', (sh.speed * 1.94).toFixed(1) + ' kn'], ['Cargo', 'Diesel + supplies'], ['Diesel', '420 m³'], ['Crew', '11']], bars: bar('Discharge', sh.state === 'alongside' ? Math.round((1 - sh.timer / 32) * 100) + '%' : '—', sh.state === 'alongside' ? (1 - sh.timer / 32) * 100 : 0, 'up'), foot: '' };
+  }
+  if (e.id === 'village') return { chip: 'Settlement', title: 'Nordby', sub: 'Pop. 214 · station staff & families', status: { cls: 'ok', text: 'Grid stable' }, note: 'island grid from power plant', stats: [['Houses', houses.length], ['Staff housed', '46'], ['Temp', `−${Math.abs(WEATHER[env.wk].temp)}°C`], ['Daylight', env.night > .5 ? 'Polar night' : 'Midday sun']], bars: '', foot: '' };
+  // buildings
+  const tr = totalRate();
+  const B = {
+    ops: { chip: 'Building · mission control', sub: '24/7 · 7 operators on shift', status: { cls: 'ok', text: 'Staffed' }, note: `${activePasses().length} contacts on console`, stats: [['On shift', '7'], ['Live contacts', activePasses().length], ['Open alarms', alerts.filter(a => a.level === 'crit' || a.level === 'warn').length], ['Uplinks today', 1140 + stats.passes]], bars: bar('Console load', Math.round(30 + activePasses().length * 18) + '%', 30 + activePasses().length * 18) },
+    proc: { chip: 'Building · data processing', sub: 'Level-0 ingest & product generation', status: { cls: 'ok', text: 'Ingesting' }, note: fmtRate(tr) + ' inbound', stats: [['Ingest', fmtRate(tr)], ['Packets in', nf(hallIngest)], ['Jobs queued', 38 + activePasses().length * 6], ['PUE', '1.21']], bars: bar('Storage', '2.84 / 4.00 PB', 71, 'up') + bar('Cooling', Math.round(40 + tr / 80) + '%', 40 + tr / 80) },
+    power: { chip: 'Building · island grid', sub: '3 × 900 kW diesel gensets', status: { cls: 'ok', text: 'Online' }, note: '2 of 3 gensets running', stats: [['Load', (1.42 + tr / 9000).toFixed(2) + ' MW'], ['Gensets', '2 / 3'], ['Fuel reserve', '41 days'], ['Frequency', (50 + Math.sin(T) * .02).toFixed(2) + ' Hz']], bars: bar('Tank farm', '1,180 / 1,500 m³', 79) },
+    cls: { chip: 'Building · subsea cable', sub: 'Nordlys-1 · 2 × 10G to mainland', status: { cls: 'ok', text: 'Lit' }, note: '9.8 ms to the mainland', stats: [['Capacity', '20 Gbps'], ['Traffic', fmtRate(tr + 2600)], ['Latency', '9.8 ms'], ['Repeaters', '14 · OK']], bars: bar('Utilisation', Math.round((tr + 2600) / 200) + '%', (tr + 2600) / 200, 'up') },
+  }[e.id];
+  return { title: e.name, foot: '', ...B };
+}
+function drawSkyplot(g, info) {
+  const W = 126, c = W / 2, R = W / 2 - 9; g.clearRect(0, 0, W, W);
+  const night = document.body.dataset.theme === 'night';
+  const ln = night ? 'rgba(255,255,255,.14)' : 'rgba(23,32,43,.13)', tx = night ? 'rgba(255,255,255,.45)' : 'rgba(23,32,43,.45)';
+  g.lineWidth = 1; g.strokeStyle = ln;
+  for (const e of [0, 30, 60]) { g.beginPath(); g.arc(c, c, R * (1 - e / 90), 0, TAU); g.stroke(); }
+  g.beginPath(); g.moveTo(c - R, c); g.lineTo(c + R, c); g.moveTo(c, c - R); g.lineTo(c, c + R); g.stroke();
+  g.fillStyle = tx; g.font = "500 8px 'Martian Mono'"; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('N', c, 4.5); g.fillText('S', c, W - 4); g.fillText('E', W - 4, c); g.fillText('W', 4, c);
+  const xy = (az, el) => { const r = R * (1 - Math.max(0, el) / (Math.PI / 2)); return [c + r * Math.sin(az), c - r * Math.cos(az)]; };
+  for (const t of info.tracks || []) {
+    g.beginPath(); for (let i = 0; i <= 48; i++) { const a = passSky(t.p, i / 48 * Math.PI); const [x, y] = xy(a.az, a.el); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.setLineDash(t.dash ? [3, 3] : []); g.strokeStyle = t.color; g.globalAlpha = t.dash ? .7 : .55; g.lineWidth = 1.6; g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    if (!t.dash && isTracking(t.p)) { g.beginPath(); for (let i = 0; i <= 32; i++) { const a = passSky(t.p, i / 32 * t.p.theta); const [x, y] = xy(a.az, a.el); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.strokeStyle = t.color; g.lineWidth = 2.4; g.stroke(); }
+  }
+  for (const p of info.points || []) {
+    const [x, y] = xy(p.az, p.el);
+    if (p.ring) { g.beginPath(); g.arc(x, y, 6 + 2 * Math.sin(T * 4), 0, TAU); g.strokeStyle = p.color; g.globalAlpha = .45; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1; }
+    g.beginPath(); g.arc(x, y, 3.4, 0, TAU); g.fillStyle = p.color; g.fill();
+  }
+}
+function tickPanel() {
+  const e = selected || stationEnt; const d = infoFor(e);
+  $('#pdChip').textContent = d.chip; $('#pdTitle').textContent = d.title; $('#pdSub').textContent = d.sub;
+  $('#pdStatus').innerHTML = pill(d.status) + `<span>${d.note || ''}</span>`;
+  $('#pdStats').innerHTML = d.stats.map(([k, v]) => `<div class="st"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  $('#pdBars').innerHTML = d.bars || ''; $('#pdFoot').textContent = d.foot || '';
+  if (plotCtx) { drawSkyplot(plotCtx, d.plot || {}); $('#pdCap').innerHTML = d.cap || ''; }
+}
+
+/* =========================================================================
+   UI: pass tracker + mini globe
+   ========================================================================= */
+$('#steps').innerHTML = `<div class="rail"><i id="railFill"></i></div>` + STEPS.map((s, i) => `<div class="step" data-i="${i}"><div class="dot">${ic('check')}</div><div class="nm">${s}</div><div class="tm">—</div></div>`).join('');
+const stepEls = [...document.querySelectorAll('.step')];
+let featured = null;
+function focusPass() {
+  if (selected?.type === 'sat') { const s = selected.sat; return s.pass || nextPassOf(s) || passes.filter(p => p.sat === s).sort((a, b) => b.tAOS - a.tAOS)[0]; }
+  if (selected?.type === 'dish') { const d = selected.dish; return d.pass || (d.lastPass && simNow - d.lastPass.tLOS < 90000 ? d.lastPass : null) || nextPassOfDish(d) || d.lastPass; }
+  const keep = featured && featured.state !== 'done' && featured.state !== 'scheduled' && !(featured.state === 'delivered' && simNow - featured.tDel > 40000);
+  if (!keep) featured = activePasses()[0] || passes.filter(p => p.state === 'prepos').sort((a, b) => a.tAOS - b.tAOS)[0] || passes.filter(p => p.state === 'scheduled').sort((a, b) => a.tAOS - b.tAOS)[0] || null;
+  return featured;
+}
+function tickTracker() {
+  const p = focusPass(); if (!p) return;
+  $('#trkPass').textContent = p.id; $('#trkSat').textContent = p.sat.name; $('#trkDish').textContent = p.dish.id;
+  const bd = $('#trkBand'); bd.textContent = p.band; bd.className = 'bd bd-' + p.band;
+  const order = { scheduled: [1, 1], prepos: [1, 1], aos: [2, 2], lock: [3, 3], downlink: [3, 3], lost: [3, 3], los: [5, 5], delivered: [6, -1], done: [6, -1] }[p.state];
+  const times = [p.tAOS - PREPOS, p.tAOS, p.tLock ?? p.tAOS + LOCK_AT, p.tDl ?? p.tAOS + DL_AT, p.tLOS, p.tDel ?? p.tLOS + 30000];
+  stepEls.forEach((el, i) => {
+    el.classList.toggle('done', i < order[0]); el.classList.toggle('active', i === order[1]); el.classList.toggle('future', i >= order[0] && i !== order[1]);
+    el.classList.toggle('lost', i === order[1] && p.state === 'lost');
+    el.querySelector('.tm').textContent = (i >= order[0] ? '~' : '') + fmtUTC(times[i]);
+  });
+  let fill = (order[0] - 1) / 5; if (isTracking(p) && p.state !== 'aos') fill = (3 + p.theta / Math.PI) / 5; if (order[0] >= 6) fill = 1;
+  $('#railFill').style.width = clamp(fill, 0, 1) * 100 + '%';
+  const dtA = simNow - p.tAOS;
+  $('#trkT').textContent = dtA < 0 ? 'T−' + fmtMS(dtA) : simNow < p.tLOS ? 'T+' + fmtMS(dtA) : 'LOS+' + fmtMS(simNow - p.tLOS);
+  $('#trkTs').textContent = { scheduled: 'awaiting pre-positioning', prepos: `${p.dish.id} slewing to rise azimuth`, aos: 'acquiring carrier', lock: 'carrier locked · demod sync', downlink: `${p.band}-band downlink`, lost: 'scintillation · reacquiring', los: 'flushing to processing', delivered: 'delivered to processing', done: 'archived' }[p.state];
+  $('#trkData').textContent = p.dataGB > 0 ? p.dataGB.toFixed(1) + ' GB' : '—';
+  $('#trkRate').textContent = isTracking(p) && p.rate > 0 ? fmtRate(p.rate) : '—';
+  $('#trkEl').textContent = (p.maxEl / DEG).toFixed(0) + '°';
+  $('#trkDop').textContent = isTracking(p) && p.track ? (doppler(p) >= 0 ? '+' : '') + doppler(p).toFixed(1) + ' kHz' : '—';
+}
+
+const globeCtx = sizeCanvas($('#globe'), 144, 144);
+let globeLon0 = STATION.lon - .5; const TILT = 30 * DEG, INC = 97.6 * DEG;
+function gp(lat, lon) { const cl = Math.cos(lat), x = cl * Math.sin(lon - globeLon0), y = Math.sin(lat), z = cl * Math.cos(lon - globeLon0); return [x, y * Math.cos(TILT) - z * Math.sin(TILT), y * Math.sin(TILT) + z * Math.cos(TILT)]; }
+function orbitLL(raan, u) { const x = Math.cos(raan) * Math.cos(u) - Math.sin(raan) * Math.sin(u) * Math.cos(INC), y = Math.sin(raan) * Math.cos(u) + Math.cos(raan) * Math.sin(u) * Math.cos(INC), z = Math.sin(u) * Math.sin(INC); return [Math.asin(z), Math.atan2(y, x)]; }
+function dest(lat, lon, brg, d) { const la = Math.asin(Math.sin(lat) * Math.cos(d) + Math.cos(lat) * Math.sin(d) * Math.cos(brg)); return [la, lon + Math.atan2(Math.sin(brg) * Math.sin(d) * Math.cos(lat), Math.cos(d) - Math.sin(lat) * Math.sin(la))]; }
+function drawGlobe(dt) {
+  globeLon0 += dt * .12;
+  const g = globeCtx, W = 144, c = 72, R = 58; g.clearRect(0, 0, W, W);
+  const night = document.body.dataset.theme === 'night';
+  const sx = (p) => c + p[0] * R, sy = (p) => c - p[1] * R;
+  const at = g.createRadialGradient(c, c, R * .9, c, c, R * 1.18); at.addColorStop(0, 'rgba(31,178,236,.25)'); at.addColorStop(1, 'rgba(31,178,236,0)'); g.fillStyle = at; g.fillRect(0, 0, W, W);
+  const gr = g.createRadialGradient(c - R * .35, c - R * .4, R * .1, c, c, R); gr.addColorStop(0, night ? '#2A5577' : '#4E93B8'); gr.addColorStop(1, night ? '#0D1E30' : '#1D4560');
+  g.beginPath(); g.arc(c, c, R, 0, TAU); g.fillStyle = gr; g.fill();
+  const poly = (pts, front = true) => { g.beginPath(); let pen = false; for (const p of pts) { if ((p[2] > 0) !== front) { pen = false; continue; } pen ? g.lineTo(sx(p), sy(p)) : g.moveTo(sx(p), sy(p)); pen = true; } };
+  g.lineWidth = .7; g.strokeStyle = 'rgba(255,255,255,.13)';
+  for (let la = -60; la <= 60; la += 30) { const pts = []; for (let lo = 0; lo <= 360; lo += 6) pts.push(gp(la * DEG, lo * DEG)); poly(pts); g.stroke(); }
+  for (let lo = 0; lo < 360; lo += 30) { const pts = []; for (let la = -90; la <= 90; la += 6) pts.push(gp(la * DEG, lo * DEG)); poly(pts); g.stroke(); }
+  { const pts = []; for (let lo = 0; lo <= 360; lo += 8) pts.push(gp(70 * DEG, lo * DEG)); g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(sx(p), sy(p)) : g.moveTo(sx(p), sy(p))); g.closePath(); g.fillStyle = 'rgba(244,242,238,.85)'; g.fill(); }
+  // coverage circle
+  { const pts = []; for (let b = 0; b <= 360; b += 10) { const [la, lo] = dest(STATION.lat, STATION.lon, b * DEG, 21 * DEG); pts.push(gp(la, lo)); } g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(sx(p), sy(p)) : g.moveTo(sx(p), sy(p))); g.closePath(); g.fillStyle = 'rgba(255,90,31,.16)'; g.fill(); g.strokeStyle = 'rgba(255,90,31,.7)'; g.lineWidth = 1; g.setLineDash([2, 2]); g.stroke(); g.setLineDash([]); }
+  // orbits
+  const tOrb = simNow / 1000 * TAU / (95 * 60);
+  for (let k = 0; k < 4; k++) {
+    const raan = (k * 45 + 10) * DEG, pts = [];
+    for (let u = 0; u <= 360; u += 5) { const [la, lo] = orbitLL(raan, u * DEG); pts.push(gp(la, lo)); }
+    g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.08)'; poly(pts, false); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.32)'; poly(pts, true); g.stroke();
+  }
+  const st = gp(STATION.lat, STATION.lon);
+  for (const s of sats) {
+    if (s.vis) continue;
+    const [la, lo] = orbitLL((s.plane * 45 + 10) * DEG, s.phase + tOrb); const p = gp(la, lo);
+    g.beginPath(); g.arc(sx(p), sy(p), p[2] > 0 ? 1.8 : 1.1, 0, TAU); g.fillStyle = p[2] > 0 ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.25)'; g.fill();
+  }
+  for (const p of activePasses()) {
+    const k = p.theta / Math.PI; let [la, lo] = dest(STATION.lat, STATION.lon, p.peakAz + (p.dir > 0 ? Math.PI / 2 : -Math.PI / 2), (.5 - k) * 36 * DEG);
+    [la, lo] = dest(la, lo, p.peakAz, (1 - p.maxEl / (Math.PI / 2)) * 14 * DEG); const q = gp(la, lo);
+    g.beginPath(); g.moveTo(sx(st), sy(st)); g.lineTo(sx(q), sy(q)); g.strokeStyle = p.state === 'lost' ? 'rgba(229,72,77,.8)' : p.band === 'S' ? 'rgba(31,178,236,.9)' : 'rgba(255,90,31,.9)'; g.lineWidth = 1.3; g.stroke();
+    g.beginPath(); g.arc(sx(q), sy(q), 3, 0, TAU); g.fillStyle = p.band === 'S' ? UPLINK : ACCENT; g.fill();
+  }
+  g.beginPath(); g.arc(sx(st), sy(st), 3 + (T * 2 % 1) * 6, 0, TAU); g.strokeStyle = `rgba(255,90,31,${1 - (T * 2 % 1)})`; g.lineWidth = 1.2; g.stroke();
+  g.beginPath(); g.arc(sx(st), sy(st), 2.8, 0, TAU); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = ACCENT; g.stroke();
+}
+
+/* =========================================================================
+   UI: live table
+   ========================================================================= */
+let tab = 'passes';
+const COLS = {
+  passes: ['Pass', 'Satellite', 'Antenna', 'Band', 'AOS', 'LOS', 'Max el', 'Status', 'Data'],
+  antennas: ['Antenna', 'Type', 'Bands', 'Status', 'Az', 'El', 'Target', 'Rate', 'Passes'],
+  sats: ['Satellite', 'NORAD', 'Alt', 'Buffer', 'Status', 'Battery', 'Last contact'],
+};
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.tab; [...$('#tabs').children].forEach(x => x.classList.toggle('on', x === b)); renderTable(); });
+function renderTable() {
+  $('#tblHead').innerHTML = `<tr>${COLS[tab].map(c => `<th>${c}</th>`).join('')}</tr>`;
+  let rows = '';
+  if (tab === 'passes') {
+    const act = passes.filter(p => isTracking(p) || p.state === 'prepos' || p.state === 'los').sort((a, b) => a.tAOS - b.tAOS);
+    const sch = passes.filter(p => p.state === 'scheduled').sort((a, b) => a.tAOS - b.tAOS).slice(0, 7);
+    const old = passes.filter(p => p.state === 'delivered' || p.state === 'done').sort((a, b) => b.tAOS - a.tAOS).slice(0, 6);
+    $('#cntPasses').textContent = act.length + sch.length;
+    rows = [...act, ...sch, ...old].map(p => {
+      const sel = selected && ((selected.type === 'sat' && selected.sat === p.sat && (isTracking(p) || p === focusPass())) || (selected.type === 'dish' && selected.dish === p.dish && p === focusPass()));
+      return `<tr data-e="${isTracking(p) ? p.sat.id : p.dish.id}" class="${sel ? 'sel' : ''}"><td class="mono">${p.id}</td><td><b>${p.sat.name}</b></td><td>${p.dish.id}</td><td><span class="bd bd-${p.band}">${p.band}</span></td><td class="mono">${fmtUTC(p.tAOS)}</td><td class="mono">${fmtUTC(p.tLOS)}</td><td class="mono">${(p.maxEl / DEG).toFixed(0)}°</td><td>${pill(passStatus(p))}</td><td class="mono">${p.dataGB > 0 ? p.dataGB.toFixed(1) + ' GB' : '<span class="muted">—</span>'}</td></tr>`;
+    }).join('');
+  } else if (tab === 'antennas') {
+    rows = dishes.map(d => {
+      const st = dishStatus(d), p = d.pass, trk = isTracking(p);
+      return `<tr data-e="${d.id}" class="${selected?.dish === d ? 'sel' : ''}"><td><b>${d.id}</b></td><td>${d.kind}</td><td class="mono">${bandList(d)}</td><td>${pill(st)}</td><td class="mono">${(trk ? compass(p.az) : compass(Math.PI - d.az)).toFixed(1)}°</td><td class="mono">${(trk ? p.el / DEG : d.el / DEG).toFixed(1)}°</td><td>${p ? p.sat.name : '<span class="muted">—</span>'}</td><td class="mono">${trk && p.rate > 0 ? fmtRate(p.rate) : '<span class="muted">—</span>'}</td><td class="mono">${d.passesToday}</td></tr>`;
+    }).join('');
+  } else {
+    rows = sats.map(s => {
+      const p = s.pass, trk = s.vis && isTracking(p), np = nextPassOf(s);
+      const st = trk ? (p.state === 'lost' ? { cls: 'bad', text: 'Link lost' } : { cls: 'ok', text: 'In contact · ' + p.dish.id }) : np ? { cls: 'mute', text: 'Next ' + fmtHM(np.tAOS) } : { cls: 'up', text: 'Imaging' };
+      return `<tr data-e="${s.id}" class="${selected?.sat === s ? 'sel' : ''}"><td><b>${s.name}</b></td><td class="mono">${s.norad}</td><td class="mono">${s.alt} km</td><td><div class="mbar ${s.buffer > 220 ? 'warn' : ''}"><i style="width:${(s.buffer / 2.56).toFixed(0)}%"></i></div><span class="mono">${s.buffer.toFixed(0)} GB</span></td><td>${pill(st)}</td><td class="mono">${s.battery.toFixed(0)}%</td><td class="mono">${s.lastContact ? Math.round((simNow - s.lastContact) / 60000) + ' min ago' : '—'}</td></tr>`;
+    }).join('');
+  }
+  $('#tblBody').innerHTML = rows;
+}
+$('#tblBody').addEventListener('click', e => { const r = e.target.closest('tr'); if (r && byId[r.dataset.e]) select(byId[r.dataset.e]); });
+
+/* =========================================================================
+   Mobile bottom sheet
+   ========================================================================= */
+const isMobile = () => innerWidth <= 860;
+let sheetTab = 'detail', mobileMode = null;
+const PANELS = ['detail', 'tracker', 'tablePanel'];
+function setSheet(k) { sheetTab = k; [...$('#sheetTabs').children].forEach(b => b.classList.toggle('on', b.dataset.s === k)); PANELS.forEach(id => document.getElementById(id).classList.toggle('show', id === k)); }
+function applyLayout() {
+  const m = isMobile(); if (m === mobileMode) return; mobileMode = m;
+  const body = $('#sheetBody');
+  if (m) { PANELS.forEach(id => body.appendChild(document.getElementById(id))); setSheet(sheetTab); }
+  else { const anchor = $('#toasts'); PANELS.forEach(id => { const el = document.getElementById(id); el.classList.remove('show'); document.body.insertBefore(el, anchor); }); }
+}
+$('#sheetTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { setSheet(b.dataset.s); $('#sheet').classList.remove('min'); } });
+$('#sheetGrab').addEventListener('click', () => $('#sheet').classList.toggle('min'));
+
+/* =========================================================================
+   Resize & main loop
+   ========================================================================= */
+function onResize() {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); applyLayout();
+}
+addEventListener('resize', onResize);
+applyLayout();
+
+const clock = new THREE.Clock();
+let T = 0, uiAcc = 0, tableAcc = 0;
+renderPanelSkeleton();
+function frame() {
+  const dt = Math.min(clock.getDelta(), .05); T += dt; simNow += dt * SIM * 1000;
+  waterUniforms.uTime.value = T;
+  updateEnv(dt); updateScheduler(); updatePasses(dt); updateDishes(dt); updateSats(); updatePackets(dt);
+  updateVehicles(dt); updateShip(dt); updateSmoke(dt); updateSnow(dt);
+  for (const s of sats) if (!s.vis) s.buffer = Math.min(s.cap, s.buffer + .017 * dt * SIM);
+  ops.radar.rotation.y += dt * 1.6; for (const f of proc.fans) f.rotation.y += dt * (6 + totalRate() / 300);
+  obstructMat.emissiveIntensity = env.night > .3 ? ((T % 1.6) < .35 ? 4 : .3) : 1.4;
+  updateCamera(dt); updateRing(); updateLabels();
+  composer.render();
+  uiAcc += dt; tableAcc += dt;
+  if (uiAcc > .25) { uiAcc = 0; $('#clockT').textContent = fmtUTC(simNow); tickKPIs(); tickPanel(); tickTracker(); tickLabels(); }
+  else if (plotCtx) { drawSkyplot(plotCtx, infoFor(selected || stationEnt).plot || {}); }
+  if (tableAcc > .7) { tableAcc = 0; renderTable(); }
+  drawGlobe(dt);
+  requestAnimationFrame(frame);
+}
+updateScheduler();
+tickKPIs(); tickPanel(); tickTracker(); renderTable(); tickLabels();
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  document.body.classList.add('ready');
+  const a = AREAS.field; flyTo(new THREE.Vector3(...a.t), a.d * (camera.aspect < 1 ? 1.55 : 1), a.p, a.th, null, 3.4);
+  document.querySelector('#areas button[data-k="field"]').classList.add('on');
+}));
+frame();
+</script>
+</body>
+</html>
